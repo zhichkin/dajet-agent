@@ -1,0 +1,10 @@
+﻿{
+  "profiles": {
+    "dajet_agent": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
