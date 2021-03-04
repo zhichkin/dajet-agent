@@ -1,4 +1,5 @@
 using DaJet.Utilities;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
@@ -19,35 +20,34 @@ namespace DaJet.Agent.Producer
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            FileLogger.Log("Worker is started.");
+            FileLogger.Log("Message producer service is started.");
             return base.StartAsync(cancellationToken);
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
-            FileLogger.Log("Worker is stoped.");
+            FileLogger.Log("Message producer service is stopped.");
             return base.StopAsync(cancellationToken);
         }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                ReceiveMessages(out string errorMessage);
+                ConsumeMessages(out string errorMessage);
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
                     FileLogger.Log(errorMessage);
-                    FileLogger.Log(string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay / 1000));
-                    await Task.Delay(Settings.CriticalErrorDelay, stoppingToken);
+                    FileLogger.Log(string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
+                    await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
                 }
 
-                int resultCode = AwaitNotification(Settings.WaitForNotificationTimeout);
+                int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
                 if (resultCode == 1) // notifications are not supported by database
                 {
-                    await Task.Delay(Settings.ReceivingMessagesPeriodicity, stoppingToken);
+                    await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
                 }
             }
         }
-        private void ReceiveMessages(out string errorMessage)
+        private void ConsumeMessages(out string errorMessage)
         {
             int sumReceived = 0;
             int messagesReceived = 0;
@@ -57,12 +57,13 @@ namespace DaJet.Agent.Producer
 
             try
             {
-                IMessageConsumer consumer = Services.GetService<IMessageConsumer>();
-                messagesReceived = consumer.ReceiveMessages(Settings.MessagesPerTransaction, out errorMessage);
+                int messagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
+                IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
+                messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
                 sumReceived += messagesReceived;
                 while (messagesReceived > 0)
                 {
-                    messagesReceived = consumer.ReceiveMessages(Settings.MessagesPerTransaction, out errorMessage);
+                    messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
                     sumReceived += messagesReceived;
                 }
             }
@@ -83,7 +84,7 @@ namespace DaJet.Agent.Producer
 
             try
             {
-                IMessageConsumer consumer = Services.GetService<IMessageConsumer>();
+                IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
                 resultCode = consumer.AwaitNotification(timeout, out errorMessage);
             }
             catch (Exception error)

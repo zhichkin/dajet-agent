@@ -7,13 +7,11 @@ namespace DaJet.Agent.Producer
 {
     public interface IMessageProducer : IDisposable
     {
-        void CreateQueue();
-        void SendMessage(string messageBody);
-        void SendMessage(string messageType, string messageBody);
+        void CreateQueue(string name);
+        void Send(DatabaseMessage message);
     }
     public sealed class MessageProducer: IMessageProducer
     {
-        private const string DEFAULT_EXCHANGE_NAME = "exchange";
         private const string PUBLISHER_CONFIRMATION_ERROR_MESSAGE = "The sending of the message has not been confirmed. Check the availability of the message broker.";
 
         private IModel Channel { get; set; }
@@ -24,40 +22,27 @@ namespace DaJet.Agent.Producer
         {
             Settings = options.Value;
         }
-        private bool QueueExists()
-        {
-            bool exists = true;
-            try
-            {
-                QueueDeclareOk queue = Channel.QueueDeclarePassive(Settings.QueueName);
-            }
-            catch
-            {
-                exists = false;
-            }
-            return exists;
-        }
-        public void CreateQueue()
+        public void CreateQueue(string name)
         {
             InitializeChannel();
 
-            Channel.ExchangeDeclare(Settings.ExchangeName, ExchangeType.Direct, true, false, null);
-            QueueDeclareOk queue = Channel.QueueDeclare(Settings.QueueName, true, false, false, null);
+            Channel.ExchangeDeclare(name, ExchangeType.Direct, true, false, null);
+            QueueDeclareOk queue = Channel.QueueDeclare(name, true, false, false, null);
             if (queue == null)
             {
-                throw new InvalidOperationException($"Creating \"{Settings.QueueName}\" queue failed.");
+                throw new InvalidOperationException($"Creating \"{name}\" queue failed.");
             }
-            Channel.QueueBind(Settings.QueueName, Settings.ExchangeName, Settings.RoutingKey, null);
+            Channel.QueueBind(name, name, string.Empty, null);
         }
 
         private IConnection CreateConnection()
         {
             IConnectionFactory factory = new ConnectionFactory()
             {
-                HostName = Settings.HostName,
-                UserName = Settings.UserName,
-                Password = Settings.Password,
-                Port = Settings.PortNumber
+                HostName = Settings.MessageBrokerSettings.HostName,
+                UserName = Settings.MessageBrokerSettings.UserName,
+                Password = Settings.MessageBrokerSettings.Password,
+                Port = Settings.MessageBrokerSettings.PortNumber
             };
             return factory.CreateConnection();
         }
@@ -101,39 +86,31 @@ namespace DaJet.Agent.Producer
             }
         }
 
-        private string CreateExchangeName(string routingKey)
+        private string CreateExchangeName(string sender, string recipient)
         {
-            if (string.IsNullOrWhiteSpace(routingKey))
-            {
-                return Settings.ExchangeName;
-            }
-            return Settings.ExchangeName.Replace(DEFAULT_EXCHANGE_NAME, routingKey);
+            return $"dajet.{sender}.{recipient}";
         }
-
-        public void SendMessage(string messageBody)
+        private string[] GetRecipients(DatabaseMessage message)
         {
-            SendMessage(string.Empty, messageBody);
+            return message.Recipients.Split(',');
         }
-        public void SendMessage(string messageType, string messageBody)
+        public void Send(DatabaseMessage message)
         {
             InitializeChannel();
 
-            _ = Settings.MessageTypeRouting.TryGetValue(messageType, out string routingKey);
-
-            string exchangeName = CreateExchangeName(routingKey);
-            byte[] message = Encoding.UTF8.GetBytes(messageBody);
-
-            //Channel.ConfirmSelect();
-            Channel.BasicPublish(exchangeName, Settings.RoutingKey, Properties, message);
-            bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.ConfirmationTimeout));
-            //if (Channel.NextPublishSeqNo == 2) { }
+            string[] recipients = GetRecipients(message);
+            foreach (string recipient in recipients)
+            {
+                string exchangeName = CreateExchangeName(message.Sender, recipient);
+                byte[] messageBytes = Encoding.UTF8.GetBytes(message.MessageBody);
+                Channel.BasicPublish(exchangeName, string.Empty, Properties, messageBytes);
+            }
+            bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
             if (!confirmed)
             {
                 throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
             }
         }
-
-        
 
         public void Dispose()
         {

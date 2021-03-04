@@ -1,6 +1,10 @@
 ﻿namespace DaJet.Agent.Consumer
 {
-    public sealed class MessageConsumer
+    public interface IMessageConsumer
+    {
+
+    }
+    public sealed class MessageConsumer : IMessageConsumer
     {
         
     }

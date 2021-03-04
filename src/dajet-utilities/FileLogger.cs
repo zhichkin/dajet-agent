@@ -15,9 +15,9 @@ namespace DaJet.Utilities
                 return _filePath;
             }
 
-            Assembly asm = Assembly.GetExecutingAssembly();
-            string appCatalogPath = Path.GetDirectoryName(asm.Location);
-            _filePath = Path.Combine(appCatalogPath, "dajet-rabbitmq-producer.log");
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            string catalogPath = Path.GetDirectoryName(assembly.Location);
+            _filePath = Path.Combine(catalogPath, "dajet-agent.log");
 
             return _filePath;
         }

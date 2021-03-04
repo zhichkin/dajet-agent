@@ -3,48 +3,25 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using System;
 using System.Data;
+using System.Linq;
 using System.Text;
 
 namespace DaJet.Agent.Producer
 {
-    internal interface IDatabaseConsumer
+    public interface IDatabaseMessageConsumer
     {
-        int ReceiveMessages(int count, out string errorMessage);
+        int ConsumeMessages(int count, out string errorMessage);
         int AwaitNotification(int timeout, out string errorMessage);
     }
-    public sealed class DatabaseConsumer : IDatabaseConsumer
+    public sealed class DatabaseMessageConsumer : IDatabaseMessageConsumer
     {
         private MessageProducerSettings Settings { get; set; }
         private IMessageProducer MessageProducer { get; set; }
-        private DaJetExchangeQueue QueueInfo { get; set; }
-        public MessageConsumer(IMessageProducer messageProducer,
-            IOptions<DaJetExchangeQueue> queueOptions,
-            IOptions<MessageProducerSettings> options)
+        public DatabaseMessageConsumer(IOptions<MessageProducerSettings> options, IMessageProducer messageProducer)
         {
             Settings = options.Value;
-            QueueInfo = queueOptions.Value;
             MessageProducer = messageProducer;
         }
-        private string BuildConnectionString()
-        {
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder()
-            {
-                DataSource = Settings.ServerName,
-                InitialCatalog = Settings.DatabaseName,
-                PersistSecurityInfo = false
-            };
-            if (string.IsNullOrWhiteSpace(Settings.UserName))
-            {
-                builder.IntegratedSecurity = true;
-            }
-            else
-            {
-                builder.UserID = Settings.UserName;
-                builder.Password = Settings.Password;
-            }
-            return builder.ToString();
-        }
-
         private void RollbackTransaction(SqlTransaction transaction, SqlDataReader reader, out string errorMessage)
         {
             errorMessage = string.Empty;
@@ -78,19 +55,19 @@ namespace DaJet.Agent.Producer
             if (connection != null) connection.Dispose();
         }
 
-        public int ReceiveMessages(int messageCount, out string errorMessage)
+        public int ConsumeMessages(int messageCount, out string errorMessage)
         {
             int messagesRecevied = 0;
             errorMessage = string.Empty;
             {
                 SqlDataReader reader = null;
                 SqlTransaction transaction = null;
-                SqlConnection connection = new SqlConnection(BuildConnectionString());
+                SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString);
 
                 SqlCommand command = connection.CreateCommand();
                 command.CommandType = CommandType.Text;
                 command.CommandText = ReceiveMessagesScript(messageCount);
-                command.CommandTimeout = 60; // 1 minute
+                command.CommandTimeout = 60; // seconds
 
                 try
                 {
@@ -101,11 +78,7 @@ namespace DaJet.Agent.Producer
                     reader = command.ExecuteReader();
                     while (reader.Read())
                     {
-                        //DaJetMessage message = ProduceMessage(reader);
-                        //MessageProducer.SendMessage(message.MessageBody);
-                        MessageProducer.SendMessage(
-                            reader.GetString("ТипСообщения"),
-                            reader.GetString("ТелоСообщения"));
+                        MessageProducer.Send(CreateDatabaseMessage(reader));
                     }
                     reader.Close();
                     messagesRecevied = reader.RecordsAffected;
@@ -130,38 +103,52 @@ namespace DaJet.Agent.Producer
             }
             return messagesRecevied;
         }
-        private DatabaseMessage ProduceMessage(SqlDataReader reader)
+        private DatabaseMessage CreateDatabaseMessage(SqlDataReader reader)
         {
-            DatabaseMessage message = new DatabaseMessage()
-            {
-                Code = reader.IsDBNull("_Code") ? 0 : (long)reader.GetDecimal("_Code"),
-                Version = reader.IsDBNull("_Version") ? 0 : BitConverter.ToInt64((byte[])reader["_Version"]),
-                MessageType = reader.IsDBNull("ТипСообщения") ? string.Empty : reader.GetString("ТипСообщения"),
-                MessageBody = reader.IsDBNull("ТелоСообщения") ? string.Empty : reader.GetString("ТелоСообщения"),
-                OperationType = reader.IsDBNull("ТипОперации") ? string.Empty : reader.GetString("ТипОперации"),
-                OperationDate = reader.IsDBNull("ДатаОперации") ? DateTime.MinValue : reader.GetDateTime("ДатаОперации")
-            };
+            DatabaseMessage message = new DatabaseMessage();
+            message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
+            message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid(reader.GetSqlBinary(1).Value);
+            message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
+            message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
+            message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+            message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+            message.OperationType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
+            message.MessageType = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
+            message.MessageBody = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
             return message;
         }
         private string ReceiveMessagesScript(int messageCount)
         {
+            DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
+            string tableName = queue.TableName;
+            string field1 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
+            string field2 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
+            string field3 = queue.Fields.Where(f => f.Property == "Получатели").FirstOrDefault()?.Name;
+            string field4 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
+            string field5 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
+            string field6 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+
             StringBuilder script = new StringBuilder();
             script.AppendLine("WITH [CTE] AS");
             script.AppendLine("(");
             script.AppendLine($"SELECT TOP({messageCount})");
-            script.AppendLine("[_Code] AS [_Code],");
-            script.AppendLine("[_Version] AS [_Version],");
-            script.AppendLine($"[{QueueInfo.Properties.Where(p => p.Name == "ДатаВремя").FirstOrDefault()?.Field}] AS [ДатаОперации],");
-            script.AppendLine($"[{QueueInfo.Properties.Where(p => p.Name == "ТипОперации").FirstOrDefault()?.Field}] AS [ТипОперации],");
-            script.AppendLine($"[{QueueInfo.Properties.Where(p => p.Name == "ТипСообщения").FirstOrDefault()?.Field}] AS [ТипСообщения],");
-            script.AppendLine($"[{QueueInfo.Properties.Where(p => p.Name == "ТелоСообщения").FirstOrDefault()?.Field}] AS [ТелоСообщения]");
+            script.AppendLine("[_Code] AS [Код],");
+            script.AppendLine("[_IDRRef] AS [Ссылка],");
+            script.AppendLine("[_Version] AS [ВерсияДанных],");
+            script.AppendLine($"[{field1}] AS [ДатаВремя],");
+            script.AppendLine($"[{field2}] AS [Отправитель],");
+            script.AppendLine($"[{field3}] AS [Получатели],");
+            script.AppendLine($"[{field4}] AS [ТипОперации],");
+            script.AppendLine($"[{field5}] AS [ТипСообщения],");
+            script.AppendLine($"[{field6}] AS [ТелоСообщения]");
             script.AppendLine("FROM");
-            script.AppendLine($"[dbo].[{QueueInfo.TableName}] WITH (ROWLOCK)");
+            script.AppendLine($"[{tableName}] WITH (ROWLOCK)");
             script.AppendLine("ORDER BY");
             script.AppendLine("[_Code] ASC, [_IDRRef] ASC");
             script.AppendLine(")");
             script.AppendLine("DELETE [CTE]");
-            script.AppendLine("OUTPUT deleted.[_Code], deleted.[_Version], deleted.[ДатаОперации],");
+            script.AppendLine("OUTPUT deleted.[Код], deleted.[Ссылка], deleted.[ВерсияДанных],");
+            script.AppendLine("deleted.[ДатаВремя], deleted.[Отправитель], deleted.[Получатели],");
             script.AppendLine("deleted.[ТипОперации], deleted.[ТипСообщения], deleted.[ТелоСообщения];");
             return script.ToString();
         }
@@ -173,7 +160,7 @@ namespace DaJet.Agent.Producer
             {
                 SqlDataReader reader = null;
                 SqlTransaction transaction = null;
-                SqlConnection connection = new SqlConnection(BuildConnectionString());
+                SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString);
 
                 SqlCommand command = connection.CreateCommand();
                 command.CommandType = CommandType.Text;
