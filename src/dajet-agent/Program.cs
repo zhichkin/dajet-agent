@@ -19,19 +19,26 @@ namespace DaJet.Agent.Service
         {
             return Host.CreateDefaultBuilder(args)
                 .UseWindowsService()
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddOptions();
-                    ConfigureAppSettings(services);
-                    services.AddSingleton<IMessageProducer, MessageProducer>();
-                    services.AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>();
-                    services.AddHostedService<MessageProducerService>();
-                    services.AddSingleton<IMessageConsumer, MessageConsumer>();
-                    services.AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>();
-                    services.AddHostedService<MessageConsumerService>();
-                });
+                .ConfigureServices(ConfigureServices);
         }
-        private static void ConfigureAppSettings(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services)
+        {
+            services.AddOptions();
+            AppSettings settings = ConfigureAppSettings(services);
+            if (settings.UseProducer)
+            {
+                services.AddSingleton<IMessageProducer, MessageProducer>();
+                services.AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>();
+                services.AddHostedService<MessageProducerService>();
+            }
+            if (settings.UseConsumer)
+            {
+                services.AddSingleton<IMessageConsumer, MessageConsumer>();
+                services.AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>();
+                services.AddHostedService<MessageConsumerService>();
+            }
+        }
+        private static AppSettings ConfigureAppSettings(IServiceCollection services)
         {
             Assembly asm = Assembly.GetExecutingAssembly();
             string catalogPath = Path.GetDirectoryName(asm.Location);
@@ -43,11 +50,14 @@ namespace DaJet.Agent.Service
                 .Build();
             config.Bind(settings);
             services.Configure<AppSettings>(config);
+            services.Configure<HostOptions>(config.GetSection("HostOptions"));
 
             FileLogger.LogSize = settings.LogSize;
             
             ConfigureProducerSettings(services, catalogPath);
             ConfigureConsumerSettings(services, catalogPath);
+
+            return settings;
         }
         private static void ConfigureProducerSettings(IServiceCollection services, string catalogPath)
         {

@@ -25,10 +25,19 @@ namespace DaJet.Agent.Producer
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
+            FileLogger.Log("Message producer service is stopping ...");
+            // Do shutdown cleanup here (see HostOptions.ShutdownTimeout)
             FileLogger.Log("Message producer service is stopped.");
             return base.StopAsync(cancellationToken);
         }
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            // Running the job in the background
+            _ = Task.Run(async () => { await DoWork(stoppingToken); }, stoppingToken);
+            // Return completed task to let other services to run
+            return Task.CompletedTask;
+        }
+        private async Task DoWork(CancellationToken stoppingToken)
         {
             while (!stoppingToken.IsCancellationRequested)
             {

@@ -31,8 +31,7 @@ namespace DaJet.Agent.Test
         public void CreateExchangeAndQueue()
         {
             IMessageProducer producer = new MessageProducer(Settings);
-            producer.CreateQueue("dajet.ײֱ.ׂוסע");
-            producer.CreateQueue("dajet.ײֱ.׃חוכ1");
+            producer.CreateQueue("׀ֱָ.ײֱ.׃חוכ1");
         }
     }
 }

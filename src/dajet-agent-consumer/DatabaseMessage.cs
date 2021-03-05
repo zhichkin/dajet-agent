@@ -4,10 +4,11 @@ namespace DaJet.Agent.Consumer
 {
     public sealed class DatabaseMessage
     {
-        public Guid Uuid { get; set; }
-        public long Code { get; set; }
-        public byte[] Version { get; set; }
-        public DateTime DateTimeStamp { get; set; }
+        public long Code { get; set; } = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
+        public Guid Uuid { get; set; } = Guid.NewGuid();
+        public bool DeletionMark { get; set; } = false;
+        public Guid PredefinedID { get; set; } = Guid.Empty;
+        public DateTime DateTimeStamp { get; set; } = DateTime.Now.AddYears(2000);
         public string Sender { get; set; }
         public string OperationType { get; set; }
         public string MessageType { get; set; }

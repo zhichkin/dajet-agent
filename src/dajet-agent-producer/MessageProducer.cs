@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.Options;
+﻿using DaJet.Utilities;
+using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Exceptions;
 using System;
 using System.Text;
 
@@ -88,7 +90,7 @@ namespace DaJet.Agent.Producer
 
         private string CreateExchangeName(string sender, string recipient)
         {
-            return $"dajet.{sender}.{recipient}";
+            return $"РИБ.{sender}.{recipient}";
         }
         private string[] GetRecipients(DatabaseMessage message)
         {
@@ -98,17 +100,42 @@ namespace DaJet.Agent.Producer
         {
             InitializeChannel();
 
+            string exchangeName = string.Empty;
             string[] recipients = GetRecipients(message);
             foreach (string recipient in recipients)
             {
-                string exchangeName = CreateExchangeName(message.Sender, recipient);
+                exchangeName = CreateExchangeName(message.Sender, recipient);
                 byte[] messageBytes = Encoding.UTF8.GetBytes(message.MessageBody);
-                Channel.BasicPublish(exchangeName, string.Empty, Properties, messageBytes);
+                try
+                {
+                    Channel.BasicPublish(exchangeName, string.Empty, true, Properties, messageBytes);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                }
             }
-            bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
-            if (!confirmed)
+            try
             {
-                throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
+                bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
+                if (!confirmed)
+                {
+                    throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
+                }
+            }
+            catch (OperationInterruptedException rabbitError)
+            {
+                if (!string.IsNullOrWhiteSpace(rabbitError.Message)
+                    && rabbitError.Message.Contains("NOT_FOUND")
+                    && rabbitError.Message.Contains(exchangeName))
+                {
+                    // queue not found
+                    FileLogger.Log(ExceptionHelper.GetErrorText(rabbitError));
+                }
+                else
+                {
+                    throw;
+                }
             }
         }
 

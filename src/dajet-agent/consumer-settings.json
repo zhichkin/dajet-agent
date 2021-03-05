@@ -1,3 +1,57 @@
 {
-
+  "CriticalErrorDelay": 300,
+  "ThisNode": "Тест",
+  "SenderNodes": [ "ЦБ" ],
+  "MessageBrokerSettings": {
+    "HostName": "localhost",
+    "PortNumber": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "ConsumerPrefetchCount": 1
+  },
+  "DatabaseSettings": {
+    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=test_node_1;Integrated Security=True",
+    "DatabaseQueue": {
+      "ObjectName": "Справочник.ВходящаяОчередьRabbitMQ",
+      "TableName": "_Reference38",
+      "Fields": [
+        {
+          "Name": "_Code",
+          "Property": "Код"
+        },
+        {
+          "Name": "_IDRRef",
+          "Property": "Ссылка"
+        },
+        {
+          "Name": "_Marked",
+          "Property": "ПометкаУдаления"
+        },
+        {
+          "Name": "_PredefinedID",
+          "Property": "Предопределённый"
+        },
+        {
+          "Name": "_Fld119",
+          "Property": "ДатаВремя"
+        },
+        {
+          "Name": "_Fld120",
+          "Property": "Отправитель"
+        },
+        {
+          "Name": "_Fld121",
+          "Property": "ТипОперации"
+        },
+        {
+          "Name": "_Fld122",
+          "Property": "ТипСообщения"
+        },
+        {
+          "Name": "_Fld123",
+          "Property": "ТелоСообщения"
+        }
+      ]
+    }
+  }
 }
