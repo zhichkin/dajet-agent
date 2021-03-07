@@ -108,7 +108,10 @@ namespace DaJet.Agent.Producer
                 byte[] messageBytes = Encoding.UTF8.GetBytes(message.MessageBody);
                 try
                 {
+                    // TODO: compose JSON message with header and body from DatabaseMessage
+                    // Это нужно для корректного заполнения отправителя и типа сообщения на стороне получателя.
                     Channel.BasicPublish(exchangeName, string.Empty, true, Properties, messageBytes);
+                    // TODO: place WaitForConfirms here
                 }
                 catch (Exception error)
                 {
