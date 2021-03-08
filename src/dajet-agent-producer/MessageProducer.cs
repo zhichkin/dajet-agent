@@ -4,6 +4,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;
 using System;
 using System.Text;
+using System.Text.Json;
 
 namespace DaJet.Agent.Producer
 {
@@ -96,6 +97,20 @@ namespace DaJet.Agent.Producer
         {
             return message.Recipients.Split(',');
         }
+        private JsonDataTransferMessage ProduceDataTransferMessage(DatabaseMessage data)
+        {
+            JsonDataTransferMessage message = new JsonDataTransferMessage()
+            {
+                Sender = data.Sender
+            };
+            message.Objects.Add(new JsonDataTransferObject()
+            {
+                Type = data.MessageType,
+                Body = data.MessageBody,
+                Operation = data.OperationType
+            });
+            return message;
+        }
         public void Send(DatabaseMessage message)
         {
             InitializeChannel();
@@ -105,39 +120,31 @@ namespace DaJet.Agent.Producer
             foreach (string recipient in recipients)
             {
                 exchangeName = CreateExchangeName(message.Sender, recipient);
-                byte[] messageBytes = Encoding.UTF8.GetBytes(message.MessageBody);
+                JsonDataTransferMessage dtm = ProduceDataTransferMessage(message);
+                string json = JsonSerializer.Serialize(dtm);
+                byte[] messageBytes = Encoding.UTF8.GetBytes(json);
                 try
                 {
-                    // TODO: compose JSON message with header and body from DatabaseMessage
-                    // Это нужно для корректного заполнения отправителя и типа сообщения на стороне получателя.
                     Channel.BasicPublish(exchangeName, string.Empty, true, Properties, messageBytes);
-                    // TODO: place WaitForConfirms here
+                    bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
+                    if (!confirmed)
+                    {
+                        throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
+                    }
                 }
-                catch (Exception error)
+                catch (OperationInterruptedException rabbitError)
                 {
-                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
-                }
-            }
-            try
-            {
-                bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
-                if (!confirmed)
-                {
-                    throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
-                }
-            }
-            catch (OperationInterruptedException rabbitError)
-            {
-                if (!string.IsNullOrWhiteSpace(rabbitError.Message)
-                    && rabbitError.Message.Contains("NOT_FOUND")
-                    && rabbitError.Message.Contains(exchangeName))
-                {
-                    // queue not found
-                    FileLogger.Log(ExceptionHelper.GetErrorText(rabbitError));
-                }
-                else
-                {
-                    throw;
+                    if (!string.IsNullOrWhiteSpace(rabbitError.Message)
+                        && rabbitError.Message.Contains("NOT_FOUND")
+                        && rabbitError.Message.Contains(exchangeName))
+                    {
+                        // queue not found
+                        FileLogger.Log(ExceptionHelper.GetErrorText(rabbitError));
+                    }
+                    else
+                    {
+                        throw;
+                    }
                 }
             }
         }

@@ -11,7 +11,7 @@ namespace DaJet.Agent.Consumer
     public interface IDatabaseMessageProducer
     {
         bool InsertMessage(DatabaseMessage message);
-        DatabaseMessage ProduceMessage(string messageBody);
+        DatabaseMessage ProduceMessage(JsonDataTransferMessage message);
     }
     public sealed class DatabaseMessageProducer : IDatabaseMessageProducer
     {
@@ -22,14 +22,17 @@ namespace DaJet.Agent.Consumer
             Settings = options.Value;
             Services = serviceProvider;
         }
-        public DatabaseMessage ProduceMessage(string messageBody)
+        public DatabaseMessage ProduceMessage(JsonDataTransferMessage message)
         {
-            DatabaseMessage message = new DatabaseMessage();
-            message.Sender = "ЦБ";
-            message.OperationType = "UPDATE";
-            message.MessageType = "message type";
-            message.MessageBody = messageBody;
-            return message;
+            DatabaseMessage dbm = new DatabaseMessage();
+            dbm.Sender = message.Sender;
+            if (message.Objects.Count > 0)
+            {
+                dbm.MessageType = message.Objects[0].Type;
+                dbm.MessageBody = message.Objects[0].Body;
+                dbm.OperationType = message.Objects[0].Operation;
+            }
+            return dbm;
         }
         public bool InsertMessage(DatabaseMessage message)
         {

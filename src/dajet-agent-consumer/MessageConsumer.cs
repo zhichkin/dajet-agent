@@ -7,6 +7,7 @@ using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 
 namespace DaJet.Agent.Consumer
 {
@@ -139,12 +140,36 @@ namespace DaJet.Agent.Consumer
         {
             if (!(sender is EventingBasicConsumer consumer)) return;
 
-            byte[] body = args.Body.ToArray();
-            string messageBody = Encoding.UTF8.GetString(body);
-            
+            bool success = true;
+
+            JsonDataTransferMessage dataTransferMessage = null;
+            try
+            {
+                byte[] body = args.Body.ToArray();
+                string messageBody = Encoding.UTF8.GetString(body);
+                dataTransferMessage = JsonSerializer.Deserialize<JsonDataTransferMessage>(messageBody);
+            }
+            catch (Exception error)
+            {
+                success = false;
+                FileLogger.Log(ExceptionHelper.GetErrorText(error));
+            }
+            if (!success)
+            {
+                try
+                {
+                    // Remove poison message from queue
+                    consumer.Model.BasicNack(args.DeliveryTag, false, false);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                }
+                return;
+            }
+
             IDatabaseMessageProducer producer = Services.GetService<IDatabaseMessageProducer>();
-            DatabaseMessage message = producer.ProduceMessage(messageBody);
-            bool success;
+            DatabaseMessage message = producer.ProduceMessage(dataTransferMessage);
             try
             {
                 success = producer.InsertMessage(message);
@@ -158,6 +183,7 @@ namespace DaJet.Agent.Consumer
                 success = false;
                 FileLogger.Log(ExceptionHelper.GetErrorText(error));
             }
+
             if (!success)
             {
                 // TODO: current consumer will be frozen until success ...
