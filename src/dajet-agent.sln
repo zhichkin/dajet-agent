@@ -11,7 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-consumer", "daj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-utilities", "dajet-utilities\dajet-utilities.csproj", "{12D6B94C-94F0-46E4-A92C-DB4740BAB311}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dajet-agent-test", "dajet-agent-test\dajet-agent-test.csproj", "{D1813BC0-EBD4-472E-9F23-08F5582620CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-test", "dajet-agent-test\dajet-agent-test.csproj", "{D1813BC0-EBD4-472E-9F23-08F5582620CD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dajet-agent-cli", "dajet-agent-cli\dajet-agent-cli.csproj", "{753E9C00-509C-48C5-A8E8-50C922D158B9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{D1813BC0-EBD4-472E-9F23-08F5582620CD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1813BC0-EBD4-472E-9F23-08F5582620CD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1813BC0-EBD4-472E-9F23-08F5582620CD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
