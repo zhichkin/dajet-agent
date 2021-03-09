@@ -27,11 +27,18 @@ namespace DaJet.Agent.Test
             Settings = Options.Create(settings);
         }
 
-        [TestMethod]
-        public void CreateExchangeAndQueue()
+        [TestMethod] public void CreateExchangeAndQueue()
         {
+            string prefix = "–»¡";
+            string mainNode = "MAIN";
+            string[] rayNodes = new string[] { "N001", "N002" };
             IMessageProducer producer = new MessageProducer(Settings);
-            producer.CreateQueue("–»¡.÷¡.”ÁÂÎ1");
+
+            for (int i = 0; i < rayNodes.Length; i++)
+            {
+                producer.CreateQueue($"{prefix}.{mainNode}.{rayNodes[i]}");
+                producer.CreateQueue($"{prefix}.{rayNodes[i]}.{mainNode}");
+            }
         }
     }
 }

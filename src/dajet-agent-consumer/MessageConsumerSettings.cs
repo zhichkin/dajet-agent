@@ -5,15 +5,15 @@ namespace DaJet.Agent.Consumer
     public sealed class MessageConsumerSettings
     {
         public int CriticalErrorDelay { get; set; } = 300; // seconds
-        public DatabaseSettings DatabaseSettings { get; set; }
-        public MessageBrokerSettings MessageBrokerSettings { get; set; }
-        public string ThisNode { get; set; }
-        public List<string> SenderNodes { get; set; } = new List<string>();
+        public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
+        public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
+        public string ThisNode { get; set; } = string.Empty;
+        public List<string> SenderNodes { get; set; } = new List<string>() { "" };
     }
     public sealed class DatabaseSettings
     {
-        public string ConnectionString { get; set; }
-        public DatabaseQueue DatabaseQueue { get; set; }
+        public string ConnectionString { get; set; } = string.Empty;
+        public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }
     public sealed class MessageBrokerSettings
     {

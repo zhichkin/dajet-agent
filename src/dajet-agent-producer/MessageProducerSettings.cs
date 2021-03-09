@@ -3,16 +3,16 @@
     public sealed class MessageProducerSettings
     {
         public int CriticalErrorDelay { get; set; } = 300; // seconds
-        public DatabaseSettings DatabaseSettings { get; set; }
-        public MessageBrokerSettings MessageBrokerSettings { get; set; }
+        public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
+        public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
     }
     public sealed class DatabaseSettings
     {
-        public string ConnectionString { get; set; }
+        public string ConnectionString { get; set; } = string.Empty;
         public int MessagesPerTransaction { get; set; } = 1000;
         public int DatabaseQueryingPeriodicity { get; set; } = 60; // seconds
         public int WaitForNotificationTimeout { get; set; } = 180; // seconds
-        public DatabaseQueue DatabaseQueue { get; set; }
+        public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }
     public sealed class MessageBrokerSettings
     {

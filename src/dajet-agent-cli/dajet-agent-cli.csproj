@@ -7,4 +7,14 @@
     <AssemblyName>dajet-agent</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="DaJet.Metadata" Version="1.0.2" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
+    <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
+  </ItemGroup>
+
 </Project>
