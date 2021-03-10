@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace DaJet.Agent.Consumer
 {
@@ -37,7 +38,7 @@ namespace DaJet.Agent.Consumer
                 Port = Settings.MessageBrokerSettings.PortNumber,
                 AutomaticRecoveryEnabled = true,
                 NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
-        };
+            };
             return factory.CreateConnection();
         }
         private void InitializeConnection()
@@ -160,10 +161,12 @@ namespace DaJet.Agent.Consumer
                 {
                     // Remove poison message from queue
                     consumer.Model.BasicNack(args.DeliveryTag, false, false);
+                    FileLogger.Log("Poison message (bad format) has been removed from queue \"" + args.Exchange + "\".");
                 }
                 catch (Exception error)
                 {
                     FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                    FileLogger.Log("Failed to Nack message for exchange \"" + args.Exchange + "\".");
                 }
                 return;
             }
@@ -186,7 +189,11 @@ namespace DaJet.Agent.Consumer
 
             if (!success)
             {
-                // TODO: current consumer will be frozen until success ...
+                FileLogger.Log("Failed to process message. Consumer for exchange \"" + args.Exchange + "\" will be reset.");
+                // TODO: reset consumer
+                //consumer.Model.BasicCancel(args.ConsumerTag);
+                //ConsumerTags.Remove(args.ConsumerTag);
+                //Task.Delay(5000).Wait();
             }
         }
     }

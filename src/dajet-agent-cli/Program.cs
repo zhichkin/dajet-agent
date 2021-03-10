@@ -2,6 +2,7 @@
 using DaJet.Agent.Producer;
 using DaJet.Metadata;
 using DaJet.Metadata.Model;
+using DaJet.Utilities;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -125,6 +126,7 @@ namespace DaJet.Agent.CLI
 
             settings.DatabaseSettings = new Consumer.DatabaseSettings()
             {
+                DatabaseProvider = MSSQL ? DatabaseProviders.SQLServer : DatabaseProviders.PostgreSQL,
                 ConnectionString = fileReader.ConnectionString,
                 DatabaseQueue = new Consumer.DatabaseQueue()
                 {
@@ -194,6 +196,7 @@ namespace DaJet.Agent.CLI
 
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
+                DatabaseProvider = MSSQL ? DatabaseProviders.SQLServer : DatabaseProviders.PostgreSQL,
                 ConnectionString = fileReader.ConnectionString,
                 DatabaseQueue = new Producer.DatabaseQueue()
                 {

@@ -48,12 +48,20 @@ namespace DaJet.Agent.Producer
                     FileLogger.Log(string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
                     await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
                 }
+                await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
 
-                int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
-                if (resultCode == 1) // notifications are not supported by database
-                {
-                    await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
-                }
+                //if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+                //{
+                //    int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
+                //    if (resultCode == 1) // notifications are not supported by database
+                //    {
+                //        await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
+                //    }
+                //}
+                //else
+                //{
+                //    await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
+                //}
             }
         }
         private void ConsumeMessages(out string errorMessage)

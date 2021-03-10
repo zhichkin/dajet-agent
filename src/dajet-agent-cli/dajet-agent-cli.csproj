@@ -15,6 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
     <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
+    <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
   </ItemGroup>
 
 </Project>

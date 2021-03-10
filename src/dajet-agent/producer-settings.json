@@ -1,33 +1,15 @@
-{
-  "CriticalErrorDelay": 300,
-  "MessageBrokerSettings": {
-    "HostName": "localhost",
-    "PortNumber": 5672,
-    "UserName": "guest",
-    "Password": "guest",
-    "ConfirmationTimeout": 1
-  },
+﻿{
+  "CriticalErrorDelay": 30,
   "DatabaseSettings": {
+    "DatabaseProvider": 0,
     "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
     "MessagesPerTransaction": 1000,
-    "DatabaseQueryingPeriodicity": 60,
-    "WaitForNotificationTimeout": 180,
+    "DatabaseQueryingPeriodicity": 10,
+    "WaitForNotificationTimeout": 10,
     "DatabaseQueue": {
-      "ObjectName": "Справочник.ИсходящаяОчередьRabbitMQ",
       "TableName": "_Reference157",
+      "ObjectName": "Справочник.ИсходящаяОчередьRabbitMQ",
       "Fields": [
-        {
-          "Name": "_Code",
-          "Property": "Код"
-        },
-        {
-          "Name": "_IDRRef",
-          "Property": "Ссылка"
-        },
-        {
-          "Name": "_Version",
-          "Property": "ВерсияДанных"
-        },
         {
           "Name": "_Fld158",
           "Property": "ДатаВремя"
@@ -51,8 +33,35 @@
         {
           "Name": "_Fld163",
           "Property": "ТелоСообщения"
+        },
+        {
+          "Name": "_Code",
+          "Property": "Код"
+        },
+        {
+          "Name": "_IDRRef",
+          "Property": "Ссылка"
+        },
+        {
+          "Name": "_Marked",
+          "Property": "ПометкаУдаления"
+        },
+        {
+          "Name": "_PredefinedID",
+          "Property": "Предопределённый"
+        },
+        {
+          "Name": "_Version",
+          "Property": "ВерсияДанных"
         }
       ]
     }
+  },
+  "MessageBrokerSettings": {
+    "HostName": "localhost",
+    "PortNumber": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "ConfirmationTimeout": 1
   }
 }

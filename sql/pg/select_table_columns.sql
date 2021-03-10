@@ -12,4 +12,5 @@ SELECT
                 LEFT JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
             WHERE c.relname = '_reference39'
                 AND pg_catalog.pg_table_is_visible(c.oid)
-        );
+        )
+        order by a.attname asc;

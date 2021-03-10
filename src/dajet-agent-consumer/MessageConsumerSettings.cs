@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using DaJet.Utilities;
+using System.Collections.Generic;
 
 namespace DaJet.Agent.Consumer
 {
@@ -8,10 +9,11 @@ namespace DaJet.Agent.Consumer
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
         public string ThisNode { get; set; } = string.Empty;
-        public List<string> SenderNodes { get; set; } = new List<string>() { "" };
+        public List<string> SenderNodes { get; set; } = new List<string>();
     }
     public sealed class DatabaseSettings
     {
+        public DatabaseProviders DatabaseProvider { get; set; } = DatabaseProviders.SQLServer;
         public string ConnectionString { get; set; } = string.Empty;
         public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }

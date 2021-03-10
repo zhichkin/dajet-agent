@@ -1,20 +1,32 @@
-{
-  "CriticalErrorDelay": 300,
-  "ThisNode": "Тест",
-  "SenderNodes": [ "ЦБ" ],
-  "MessageBrokerSettings": {
-    "HostName": "localhost",
-    "PortNumber": 5672,
-    "UserName": "guest",
-    "Password": "guest",
-    "ConsumerPrefetchCount": 1
-  },
+﻿{
+  "CriticalErrorDelay": 30,
   "DatabaseSettings": {
-    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=test_node_1;Integrated Security=True",
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
     "DatabaseQueue": {
+      "TableName": "_Reference164",
       "ObjectName": "Справочник.ВходящаяОчередьRabbitMQ",
-      "TableName": "_Reference38",
       "Fields": [
+        {
+          "Name": "_Fld165",
+          "Property": "ДатаВремя"
+        },
+        {
+          "Name": "_Fld166",
+          "Property": "Отправитель"
+        },
+        {
+          "Name": "_Fld167",
+          "Property": "ТипОперации"
+        },
+        {
+          "Name": "_Fld168",
+          "Property": "ТипСообщения"
+        },
+        {
+          "Name": "_Fld169",
+          "Property": "ТелоСообщения"
+        },
         {
           "Name": "_Code",
           "Property": "Код"
@@ -32,26 +44,21 @@
           "Property": "Предопределённый"
         },
         {
-          "Name": "_Fld119",
-          "Property": "ДатаВремя"
-        },
-        {
-          "Name": "_Fld120",
-          "Property": "Отправитель"
-        },
-        {
-          "Name": "_Fld121",
-          "Property": "ТипОперации"
-        },
-        {
-          "Name": "_Fld122",
-          "Property": "ТипСообщения"
-        },
-        {
-          "Name": "_Fld123",
-          "Property": "ТелоСообщения"
+          "Name": "_Version",
+          "Property": "ВерсияДанных"
         }
       ]
     }
-  }
+  },
+  "MessageBrokerSettings": {
+    "HostName": "localhost",
+    "PortNumber": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "ConsumerPrefetchCount": 1
+  },
+  "ThisNode": "MAIN",
+  "SenderNodes": [
+    "N001", "N002"
+  ]
 }
