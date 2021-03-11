@@ -11,9 +11,14 @@ namespace DaJet.Agent.Service
 {
     public static class Program
     {
+        private static IHost _host;
+        private const string LOG_TOKEN = "HOST";
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
+            FileLogger.Log(LOG_TOKEN, "Hosting service is started.");
+            _host = CreateHostBuilder(args).Build();
+            _host.Run();
+            FileLogger.Log(LOG_TOKEN, "Hosting service is stopped.");
         }
         private static IHostBuilder CreateHostBuilder(string[] args)
         {

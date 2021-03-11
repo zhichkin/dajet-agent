@@ -22,6 +22,10 @@ namespace DaJet.Utilities
             return _filePath;
         }
         public static int LogSize { get; set; }
+        public static void Log(string token, string text)
+        {
+            Log(string.Format("[{0}] {1}", token, text));
+        }
         public static void Log(string text)
         {
             string filePath = GetFilePath();

@@ -59,6 +59,6 @@
   },
   "ThisNode": "MAIN",
   "SenderNodes": [
-    "N001", "N002"
+    "N001", "N002", "N003"
   ]
 }

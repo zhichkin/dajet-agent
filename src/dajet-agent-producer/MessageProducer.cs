@@ -15,6 +15,7 @@ namespace DaJet.Agent.Producer
     }
     public sealed class MessageProducer: IMessageProducer
     {
+        private const string LOG_TOKEN = "P-MSG";
         private const string PUBLISHER_CONFIRMATION_ERROR_MESSAGE = "The sending of the message has not been confirmed. Check the availability of the message broker.";
 
         private IModel Channel { get; set; }
@@ -139,7 +140,7 @@ namespace DaJet.Agent.Producer
                         && rabbitError.Message.Contains(exchangeName))
                     {
                         // queue not found
-                        FileLogger.Log(ExceptionHelper.GetErrorText(rabbitError));
+                        FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(rabbitError));
                     }
                     else
                     {

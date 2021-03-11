@@ -67,8 +67,8 @@ namespace test_consumers
 
             Task.Delay(15000).Wait();
 
-            //consumer.Model.BasicCancel(consumerTag);
-            //consumer.Model.BasicNack(args.DeliveryTag, false, false);
+            //consumer.Model.BasicCancel(consumerTag); не возвращает неподтверждённое сообщение в очередь
+            //consumer.Model.BasicNack(args.DeliveryTag, false, false); не гарантирует порядок сообщения при его возврате в очередь
 
             StartConsumerTask(exchange);
         }

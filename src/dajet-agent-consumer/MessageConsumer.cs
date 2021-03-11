@@ -5,22 +5,31 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace DaJet.Agent.Consumer
 {
+    internal sealed class ConsumerInfo
+    {
+        internal string Exchange { get; set; }
+        internal EventingBasicConsumer Consumer { get; set; }
+    }
     public interface IMessageConsumer : IDisposable
     {
         void Consume();
     }
     public sealed class MessageConsumer : IMessageConsumer
     {
-        private IModel Channel { get; set; }
+        private const string LOG_TOKEN = "C-MSG";
         private IConnection Connection { get; set; }
-        private List<string> ConsumerTags { get; set; } = new List<string>();
+        private ConcurrentDictionary<string, string> ConsumerTags { get; set; } = new ConcurrentDictionary<string, string>();
+        private ConcurrentDictionary<string, ConsumerInfo> Exchanges { get; set; } = new ConcurrentDictionary<string, ConsumerInfo>();
         private IServiceProvider Services { get; set; }
         private MessageConsumerSettings Settings { get; set; }
         public MessageConsumer(IServiceProvider serviceProvider, IOptions<MessageConsumerSettings> options)
@@ -53,45 +62,8 @@ namespace DaJet.Agent.Consumer
                 Connection = CreateConnection();
             }
         }
-        private void InitializeChannel()
-        {
-            InitializeConnection();
-
-            if (Channel == null)
-            {
-                Channel = Connection.CreateModel();
-                Channel.BasicQos(0, Settings.MessageBrokerSettings.ConsumerPrefetchCount, false);
-            }
-            else if (Channel.IsClosed)
-            {
-                Channel.Dispose();
-                Channel = Connection.CreateModel();
-                Channel.BasicQos(0, Settings.MessageBrokerSettings.ConsumerPrefetchCount, false);
-            }
-        }
         public void Dispose()
         {
-            if (Channel != null)
-            {
-                if (!Channel.IsClosed)
-                {
-                    foreach (string tag in ConsumerTags)
-                    {
-                        try
-                        {
-                            Channel.BasicCancel(tag);
-                        }
-                        catch (Exception error)
-                        {
-                            FileLogger.Log(ExceptionHelper.GetErrorText(error));
-                        }
-                    }
-                    Channel.Close();
-                }
-                Channel.Dispose();
-                Channel = null;
-            }
-
             if (Connection != null)
             {
                 if (Connection.IsOpen)
@@ -102,46 +74,186 @@ namespace DaJet.Agent.Consumer
                 Connection = null;
             }
         }
+        private void DisposeChannel(IModel channel)
+        {
+            if (channel != null)
+            {
+                channel.Dispose();
+            }
+        }
+        private void DisposeConsumer(EventingBasicConsumer consumer)
+        {
+            if (consumer == null) return;
+            consumer.Received -= ProcessMessage;
+        }
+        private void DisposeConsumerTags(string exchange)
+        {
+            string[] tags = ConsumerTags
+                .Where(kvp => kvp.Value == exchange)
+                .Select(kvp => kvp.Key).ToArray();
+            
+            if (tags == null) return;
 
+            for (int i = 0; i < tags.Length; i++)
+            {
+                _ = ConsumerTags.TryRemove(tags[i], out _);
+            }
+        }
+                
         private string CreateExchangeName(string sender)
         {
             return $"РИБ.{sender}.{Settings.ThisNode}";
         }
         public void Consume()
         {
-            InitializeChannel();
-
+            InitializeConnection();
+            InitializeConsumers();
+        }
+        private void InitializeConsumers()
+        {
             foreach (string sender in Settings.SenderNodes)
             {
-                string name = CreateExchangeName(sender);
-                EventingBasicConsumer consumer = new EventingBasicConsumer(Channel);
-                consumer.Received += ProcessMessage;
-                try
+                string exchange = CreateExchangeName(sender);
+                if (Exchanges.TryGetValue(exchange, out ConsumerInfo consumerInfo))
                 {
-                    string tag = Channel.BasicConsume(name, false, consumer);
-                    ConsumerTags.Add(tag);
+                    if (!IsConsumerHealthy(consumerInfo.Consumer))
+                    {
+                        ResetConsumer(consumerInfo, 0);
+                    }
                 }
-                catch (OperationInterruptedException rabbitError)
+                else
                 {
-                    if (!string.IsNullOrWhiteSpace(rabbitError.Message)
-                        && rabbitError.Message.Contains("NOT_FOUND")
-                        && rabbitError.Message.Contains(name))
-                    {
-                        // queue not found
-                        FileLogger.Log(ExceptionHelper.GetErrorText(rabbitError));
-                    }
-                    else
-                    {
-                        throw;
-                    }
+                    StartConsumerTask(exchange);
                 }
             }
         }
+        private bool IsConsumerHealthy(EventingBasicConsumer consumer)
+        {
+            return (consumer != null
+                && consumer.Model != null
+                && consumer.Model.IsOpen
+                && consumer.IsRunning);
+        }
+        private void StartConsumerTask(string exchange)
+        {
+            _ = Task.Factory.StartNew(StartNewConsumer, exchange,
+                    CancellationToken.None,
+                    TaskCreationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
+        }
+        private void StartNewConsumer(object exchangeName)
+        {
+            if (!(exchangeName is string exchange)) return;
+
+            IModel channel = null;
+            EventingBasicConsumer consumer = null;
+
+            try
+            {
+                channel = Connection.CreateModel();
+                channel.BasicQos(0, 1, false);
+
+                consumer = new EventingBasicConsumer(channel);
+                consumer.Received += ProcessMessage;
+
+                string tag = channel.BasicConsume(exchange, false, consumer);
+                _ = ConsumerTags.TryAdd(tag, exchange);
+            }
+            catch (Exception error)
+            {
+                DisposeChannel(channel);
+                DisposeConsumer(consumer);
+                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+                throw; // Завершаем поток (задачу) с ошибкой
+            }
+
+            if (Exchanges.TryGetValue(exchange, out ConsumerInfo consumerInfo))
+            {
+                if (consumerInfo.Consumer != null)
+                {
+                    DisposeChannel(consumerInfo.Consumer.Model);
+                    DisposeConsumer(consumerInfo.Consumer);
+                }
+                consumerInfo.Consumer = consumer;
+            }
+            else
+            {
+                consumerInfo = new ConsumerInfo()
+                {
+                    Exchange = exchange,
+                    Consumer = consumer
+                };
+                _ = Exchanges.TryAdd(exchange, consumerInfo);
+            }
+        }
+        private void ResetConsumer(string consumerTag)
+        {
+            if (!ConsumerTags.TryGetValue(consumerTag, out string exchange)) return;
+            if (!Exchanges.TryGetValue(exchange, out ConsumerInfo consumerInfo)) return;
+            if (consumerInfo == null) return;
+            
+            _ = ConsumerTags.TryRemove(consumerTag, out _);
+
+            ResetConsumer(consumerInfo, Settings.CriticalErrorDelay * 1000);
+        }
+        private void ResetConsumer(ConsumerInfo consumerInfo, int timeout)
+        {
+            if (consumerInfo == null || consumerInfo.Consumer == null) return;
+
+            DisposeChannel(consumerInfo.Consumer.Model);
+            DisposeConsumer(consumerInfo.Consumer);
+            DisposeConsumerTags(consumerInfo.Exchange);
+                        
+            if (timeout > 0)
+            {
+                Task.Delay(timeout).Wait();
+            }
+            
+            StartConsumerTask(consumerInfo.Exchange);
+        }
+        private void UnsubscribeConsumer(EventingBasicConsumer consumer, string consumerTag)
+        {
+            try
+            {
+                if (IsConsumerHealthy(consumer))
+                {
+                    consumer.Model.BasicCancel(consumerTag);
+                }
+            }
+            catch (Exception error)
+            {
+                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+            }
+            finally
+            {
+                DisposeChannel(consumer.Model);
+                DisposeConsumer(consumer);
+            }
+            FileLogger.Log(LOG_TOKEN, $"Consumer tag \"{consumerTag}\" has been unsubscribed.");
+        }
+        private void RemovePoisonMessage(string exchange, EventingBasicConsumer consumer, ulong deliveryTag)
+        {
+            try
+            {
+                consumer.Model.BasicNack(deliveryTag, false, false);
+                FileLogger.Log(LOG_TOKEN, "Poison message (bad format) has been removed from queue \"" + exchange + "\".");
+            }
+            catch (Exception error)
+            {
+                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+                FileLogger.Log(LOG_TOKEN, "Failed to Nack message for exchange \"" + exchange + "\".");
+            }
+        }
+
         private void ProcessMessage(object sender, BasicDeliverEventArgs args)
         {
             if (!(sender is EventingBasicConsumer consumer)) return;
 
-            bool success = true;
+            if (!ConsumerTags.TryGetValue(args.ConsumerTag, out string exchange))
+            {
+                UnsubscribeConsumer(consumer, args.ConsumerTag);
+                return;
+            }
 
             JsonDataTransferMessage dataTransferMessage = null;
             try
@@ -152,29 +264,20 @@ namespace DaJet.Agent.Consumer
             }
             catch (Exception error)
             {
-                success = false;
-                FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
             }
-            if (!success)
+
+            if (dataTransferMessage == null)
             {
-                try
-                {
-                    // Remove poison message from queue
-                    consumer.Model.BasicNack(args.DeliveryTag, false, false);
-                    FileLogger.Log("Poison message (bad format) has been removed from queue \"" + args.Exchange + "\".");
-                }
-                catch (Exception error)
-                {
-                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
-                    FileLogger.Log("Failed to Nack message for exchange \"" + args.Exchange + "\".");
-                }
+                RemovePoisonMessage(exchange, consumer, args.DeliveryTag);
                 return;
             }
 
+            bool success = true;
             IDatabaseMessageProducer producer = Services.GetService<IDatabaseMessageProducer>();
-            DatabaseMessage message = producer.ProduceMessage(dataTransferMessage);
             try
             {
+                DatabaseMessage message = producer.ProduceMessage(dataTransferMessage);
                 success = producer.InsertMessage(message);
                 if (success)
                 {
@@ -184,16 +287,13 @@ namespace DaJet.Agent.Consumer
             catch (Exception error)
             {
                 success = false;
-                FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
             }
 
             if (!success)
             {
-                FileLogger.Log("Failed to process message. Consumer for exchange \"" + args.Exchange + "\" will be reset.");
-                // TODO: reset consumer
-                //consumer.Model.BasicCancel(args.ConsumerTag);
-                //ConsumerTags.Remove(args.ConsumerTag);
-                //Task.Delay(5000).Wait();
+                ResetConsumer(args.ConsumerTag); // return unacked messages back to queue in the same order (!)
+                FileLogger.Log(LOG_TOKEN, "Failed to process message. Consumer for exchange \"" + exchange + "\" has been reset.");
             }
         }
     }

@@ -10,6 +10,7 @@ namespace DaJet.Agent.Producer
 {
     public sealed class MessageProducerService : BackgroundService
     {
+        private const string LOG_TOKEN = "P-SVC";
         private IServiceProvider Services { get; set; }
         private MessageProducerSettings Settings { get; set; }
 
@@ -20,14 +21,14 @@ namespace DaJet.Agent.Producer
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            FileLogger.Log("Message producer service is started.");
+            FileLogger.Log(LOG_TOKEN, "Message producer service is started.");
             return base.StartAsync(cancellationToken);
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
-            FileLogger.Log("Message producer service is stopping ...");
+            FileLogger.Log(LOG_TOKEN, "Message producer service is stopping ...");
             // Do shutdown cleanup here (see HostOptions.ShutdownTimeout)
-            FileLogger.Log("Message producer service is stopped.");
+            FileLogger.Log(LOG_TOKEN, "Message producer service is stopped.");
             return base.StopAsync(cancellationToken);
         }
         protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -44,24 +45,24 @@ namespace DaJet.Agent.Producer
                 ConsumeMessages(out string errorMessage);
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    FileLogger.Log(errorMessage);
-                    FileLogger.Log(string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
+                    FileLogger.Log(LOG_TOKEN, errorMessage);
+                    FileLogger.Log(LOG_TOKEN, string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
                     await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
                 }
                 await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
 
-                //if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
-                //{
-                //    int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
-                //    if (resultCode == 1) // notifications are not supported by database
-                //    {
-                //        await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
-                //    }
-                //}
-                //else
-                //{
-                //    await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
-                //}
+                if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+                {
+                    int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
+                    if (resultCode == 1) // notifications are not supported by database
+                    {
+                        await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
+                    }
+                }
+                else
+                {
+                    await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
+                }
             }
         }
         private void ConsumeMessages(out string errorMessage)
@@ -70,7 +71,7 @@ namespace DaJet.Agent.Producer
             int messagesReceived = 0;
             errorMessage = string.Empty;
 
-            FileLogger.Log("Start receiving messages.");
+            FileLogger.Log(LOG_TOKEN, "Start receiving messages.");
 
             try
             {
@@ -90,14 +91,14 @@ namespace DaJet.Agent.Producer
                     + ExceptionHelper.GetErrorText(error);
             }
 
-            FileLogger.Log(string.Format("{0} messages received.", sumReceived));
+            FileLogger.Log(LOG_TOKEN, string.Format("{0} messages received.", sumReceived));
         }
         private int AwaitNotification(int timeout)
         {
             int resultCode = 0;
             string errorMessage = string.Empty;
 
-            FileLogger.Log("Start awaiting notification ...");
+            FileLogger.Log(LOG_TOKEN, "Start awaiting notification ...");
 
             try
             {
@@ -112,20 +113,20 @@ namespace DaJet.Agent.Producer
 
             if (!string.IsNullOrEmpty(errorMessage))
             {
-                FileLogger.Log(errorMessage);
+                FileLogger.Log(LOG_TOKEN, errorMessage);
             }
 
             if (resultCode == 0)
             {
-                FileLogger.Log("Notification received successfully.");
+                FileLogger.Log(LOG_TOKEN, "Notification received successfully.");
             }
             else if (resultCode == 1)
             {
-                FileLogger.Log("Notifications are not supported.");
+                FileLogger.Log(LOG_TOKEN, "Notifications are not supported.");
             }
             else if (resultCode == 2)
             {
-                FileLogger.Log("No notification received.");
+                FileLogger.Log(LOG_TOKEN, "No notification received.");
             }
 
             return resultCode;

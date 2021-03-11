@@ -17,6 +17,7 @@ namespace DaJet.Agent.Consumer
     }
     public sealed class DatabaseMessageProducer : IDatabaseMessageProducer
     {
+        private const string LOG_TOKEN = "P-DB";
         private IServiceProvider Services { get; set; }
         private MessageConsumerSettings Settings { get; set; }
         public DatabaseMessageProducer(IServiceProvider serviceProvider, IOptions<MessageConsumerSettings> options)
@@ -51,6 +52,7 @@ namespace DaJet.Agent.Consumer
         }
         public bool InsertMessage(DatabaseMessage message)
         {
+            // TODO: use try-catch statement and handle exceptions thrown from using statements in this method !?
             if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
             {
                 return SQLServer_InsertMessage(message);
@@ -87,10 +89,11 @@ namespace DaJet.Agent.Consumer
                 }
                 catch (Exception error)
                 {
-                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
                 }
                 finally
                 {
+                    // TODO: replace with using statement and handle exceptions outside the method !?
                     DisposeDatabaseResources(connection, null, command);
                 }
             }
@@ -150,7 +153,8 @@ namespace DaJet.Agent.Consumer
                 }
                 catch (Exception error)
                 {
-                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                    // TODO: replace with using statement and handle exceptions outside the method !?
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
                 }
                 finally
                 {
