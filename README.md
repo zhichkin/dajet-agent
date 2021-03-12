@@ -4,6 +4,8 @@
 
 ![Общая схема обмена данными на RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0%20%D0%BE%D0%B1%D0%BC%D0%B5%D0%BD%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8%20RabbitMQ.png)
 
+Для работы утилиты генерации файлов настроек и агентов обмена данными требуется установка [.NET Core 3.1](https://dotnet.microsoft.com/download).
+
 <details>
 <summary>Утилита для генерации файлов настроек</summary>
 
