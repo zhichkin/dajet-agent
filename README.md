@@ -244,7 +244,7 @@
 </details>
 
 <details>
-<summary>4. Настроить файл **consumer-settings.json** для роли импортёра данных.</summary>
+<summary>4. Настроить файл consumer-settings.json для роли импортёра данных.</summary>
 
 <details>
 <summary>Описание файла consumer-settings.json</summary>
