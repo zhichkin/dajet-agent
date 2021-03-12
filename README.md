@@ -1,6 +1,8 @@
 # РИБ 1С на RabbitMQ
 
 [Общее описание обмена данными на RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/%D0%9E%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5%20%D0%BE%D0%B1%D0%BC%D0%B5%D0%BD%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8%20RabbitMQ.pdf)
+
+![Общая схема обмена данными на RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0%20%D0%BE%D0%B1%D0%BC%D0%B5%D0%BD%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8%20RabbitMQ.png)
  
 <details>
 <summary>Утилита генерации файлов настроек</summary>
@@ -36,8 +38,6 @@
 **Примечание:** в случае необходимости указать порт для **PostgreSQL** адрес сервера можно указать, например, так: **127.0.0.1:5432**
 
 </details>
-
-![Общая схема обмена данными на RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/%D0%A1%D1%85%D0%B5%D0%BC%D0%B0%20%D0%BE%D0%B1%D0%BC%D0%B5%D0%BD%D0%B0%20%D0%B4%D0%B0%D0%BD%D0%BD%D1%8B%D0%BC%D0%B8%20RabbitMQ.png)
 
 <details>
 <summary>Установка и настройка подсистемы 1С "ОбменДаннымиRabbitMQ"</summary>
