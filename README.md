@@ -7,7 +7,7 @@
 <details>
 <summary>Утилита для генерации файлов настроек</summary>
 
-Скачать утилиту для генерации файлов настроек можно в [разделе релизов](https://github.com/zhichkin/dajet-agent/releases/).
+[Скачать утилиту](https://github.com/zhichkin/dajet-agent/releases/).
 
 Поддерживается работа с базами данных 1С на Microsoft SQL Server и PostgreSQL.
 
@@ -96,7 +96,7 @@
 <details>
 <summary>Установка и настройка агента обмена данными</summary>
 
-Скачать агента обмена данными можно в [разделе релизов](https://github.com/zhichkin/dajet-agent/releases/).
+[Скачать агента обмена данными](https://github.com/zhichkin/dajet-agent/releases/).
 
 1. Распаковать архив в каталог установки. Исполняемый файл называется **DaJet.Agent.Service.exe**.
 2. Настроить файл **appsettings.json**.
@@ -228,5 +228,103 @@
 </details>
 
 4. Настроить файл **consumer-settings.json** для роли импортёра данных.
+<details>
+<summary>Описание файла consumer-settings.json</summary>
+
+- **ThisNode** - код этого узла обмена (получателя), который обслуживает данный агент обмена данными.
+- **SenderNodes** - коды узлов-отправителей, разделённых запятой, от которых данный узел принимает сообщения.
+- **CriticalErrorDelay** - интервал ожидания доступности сервера СУБД или RabbitMQ в секундах.
+- **MessageBrokerSettings** - секция для настройки подключения к серверу RabbitMQ.
+  - **HostName** - сетевой адрес сервера.
+  - **PortNumber** - порт сервера.
+  - **UserName** - имя пользователя для подключения к серверу.
+  - **Password** - пароль пользователя для подключения к серверу.
+  - **ConsumerPrefetchCount** - количество сообщений, которое буферизуется на клиенте для получения.
+Данный параметр влияет на скорость загрузки сообщений, но также может влиять увеличение расходования ресурсов, например, оперативной памяти клиентом.
+Настраивается в зависимости от условий эксплуатации. Подробнее можно посмотреть в [документации RabbitMQ](https://www.rabbitmq.com/consumer-prefetch.html).
+- **DatabaseSettings** - секция для настройки подключения к серверу СУБД.
+  - **DatabaseProvider** - тип севера СУБД (0 - Microsoft SQL Server, 1 - PostgreSQL).
+  - **ConnectionString** - строка подключения к базе данных СУБД.
+  - **MessagesPerTransaction** - количество исходящих сообщений, обрабатываемых за одну транзакцию СУБД.
+  - **DatabaseQueryingPeriodicity** - интервал ожидания новых сообщений в узле обмена в секундах.
+  - **WaitForNotificationTimeout** - таймаут ожидания уведомления о новых сообщениях в узле обмена в секундах (реализовано только для SQL Server).
+Используется для реализации обмена данными в режиме online.
+  - **DatabaseQueue** - секция для описания таблицы справочника "ИсходящаяОчередьRabbitMQ".
+    - **TableName** - имя таблицы СУБД.
+    - **ObjectName** - имя объекта метаданных 1С.
+    - **Fields** - секция для описания полей таблицы СУБД справочника "ИсходящаяОчередьRabbitMQ".
+      - **Name** - имя поля таблицы СУБД.
+      - **Property** - имя реквизита объекта метаданных 1С.
+
+</details>
+<details>
+<summary>Пример файла consumer-settings.json</summary>
+
+```JSON
+{
+  "ThisNode": "MAIN",
+  "SenderNodes": [ "N001", "N002", "N003" ],
+  "CriticalErrorDelay": 300,
+  "MessageBrokerSettings": {
+    "HostName": "localhost",
+    "PortNumber": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "ConsumerPrefetchCount": 1
+  },
+  "DatabaseSettings": {
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
+    "DatabaseQueue": {
+      "TableName": "_Reference164",
+      "ObjectName": "Справочник.ВходящаяОчередьRabbitMQ",
+      "Fields": [
+        {
+          "Name": "_Fld165",
+          "Property": "ДатаВремя"
+        },
+        {
+          "Name": "_Fld166",
+          "Property": "Отправитель"
+        },
+        {
+          "Name": "_Fld167",
+          "Property": "ТипОперации"
+        },
+        {
+          "Name": "_Fld168",
+          "Property": "ТипСообщения"
+        },
+        {
+          "Name": "_Fld169",
+          "Property": "ТелоСообщения"
+        },
+        {
+          "Name": "_Code",
+          "Property": "Код"
+        },
+        {
+          "Name": "_IDRRef",
+          "Property": "Ссылка"
+        },
+        {
+          "Name": "_Marked",
+          "Property": "ПометкаУдаления"
+        },
+        {
+          "Name": "_PredefinedID",
+          "Property": "Предопределённый"
+        },
+        {
+          "Name": "_Version",
+          "Property": "ВерсияДанных"
+        }
+      ]
+    }
+  }
+}
+```
+
+</details>
 
 </details>
