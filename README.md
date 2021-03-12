@@ -125,7 +125,108 @@
 ```
 
 </details>
+
 3. Настроить файл **producer-settings.json** для роли экспортёра данных.
+<details>
+<summary>Описание файла producer-settings.json</summary>
+
+- **CriticalErrorDelay** - интервал ожидания доступности сервера СУБД или RabbitMQ в секундах.
+- **MessageBrokerSettings** - секция для настройки подключения к серверу RabbitMQ.
+-- **HostName** - сетевой адрес сервера.
+-- **PortNumber** - порт сервера.
+-- **UserName** - имя пользователя для подключения к серверу.
+-- **Password** - пароль пользователя для подключения к серверу.
+-- **ConfirmationTimeout** - таймаут ожидания подтверждения сервером RabbitMQ получения сообщения (publisher confirm), указывается в секундах.
+- **DatabaseSettings** - секция для настройки подключения к серверу СУБД.
+-- **DatabaseProvider** - тип севера СУБД (0 - Microsoft SQL Server, 1 - PostgreSQL).
+-- **ConnectionString** - строка подключения к базе данных СУБД.
+-- **MessagesPerTransaction** - количество исходящих сообщений, обрабатываемых за одну транзакцию СУБД.
+-- **DatabaseQueryingPeriodicity** - интервал ожидания новых сообщений в узле обмена в секундах.
+-- **WaitForNotificationTimeout** - таймаут ожидания уведомления о новых сообщениях в узле обмена в секундах (реализовано только для SQL Server).
+Используется для реализации обмена данными в режиме online.
+-- **DatabaseQueue** - секция для описания таблицы справочника "ИсходящаяОчередьRabbitMQ".
+--- **TableName** - имя таблицы СУБД.
+--- **ObjectName** - имя объекта метаданных 1С.
+--- **Fields** - секция для описания полей таблицы СУБД справочника "ИсходящаяОчередьRabbitMQ".
+---- **Name** - имя поля таблицы СУБД.
+---- **Property** - имя реквизита объекта метаданных 1С.
+
+</details>
+<details>
+<summary>Пример файла producer-settings.json</summary>
+
+```JSON
+{
+  "CriticalErrorDelay": 300,
+  "MessageBrokerSettings": {
+    "HostName": "localhost",
+    "PortNumber": 5672,
+    "UserName": "guest",
+    "Password": "guest",
+    "ConfirmationTimeout": 1
+  },
+  "DatabaseSettings": {
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=SERVER_ADDRESS;Initial Catalog=DATABASE_NAME;Integrated Security=True",
+    "MessagesPerTransaction": 1000,
+    "DatabaseQueryingPeriodicity": 60,
+    "WaitForNotificationTimeout": 180,
+    "DatabaseQueue": {
+      "TableName": "_Reference157",
+      "ObjectName": "Справочник.ИсходящаяОчередьRabbitMQ",
+      "Fields": [
+        {
+          "Name": "_Fld158",
+          "Property": "ДатаВремя"
+        },
+        {
+          "Name": "_Fld159",
+          "Property": "Отправитель"
+        },
+        {
+          "Name": "_Fld160",
+          "Property": "Получатели"
+        },
+        {
+          "Name": "_Fld161",
+          "Property": "ТипОперации"
+        },
+        {
+          "Name": "_Fld162",
+          "Property": "ТипСообщения"
+        },
+        {
+          "Name": "_Fld163",
+          "Property": "ТелоСообщения"
+        },
+        {
+          "Name": "_Code",
+          "Property": "Код"
+        },
+        {
+          "Name": "_IDRRef",
+          "Property": "Ссылка"
+        },
+        {
+          "Name": "_Marked",
+          "Property": "ПометкаУдаления"
+        },
+        {
+          "Name": "_PredefinedID",
+          "Property": "Предопределённый"
+        },
+        {
+          "Name": "_Version",
+          "Property": "ВерсияДанных"
+        }
+      ]
+    }
+  }
+}
+```
+
+</details>
+
 4. Настроить файл **consumer-settings.json** для роли импортёра данных.
 
 </details>
