@@ -104,7 +104,10 @@
 **Агент обмена данными устанавливается отдельно для каждого узла обмена данными (базы данных СУБД).**
 
 1. Распаковать архив в каталог установки. Исполняемый файл называется **DaJet.Agent.Service.exe**.
-2. Настроить файл **appsettings.json**.
+
+<details>
+<summary>2. Настроить файл appsettings.json.</summary>
+
 <details>
 <summary>Описание файла appsettings.json</summary>
 
@@ -130,8 +133,11 @@
 ```
 
 </details>
+</details>
 
-3. Настроить файл **producer-settings.json** для роли экспортёра данных.
+<details>
+<summary>3. Настроить файл producer-settings.json для роли экспортёра данных.</summary>
+
 <details>
 <summary>Описание файла producer-settings.json</summary>
 
@@ -235,8 +241,11 @@
 ```
 
 </details>
+</details>
 
-4. Настроить файл **consumer-settings.json** для роли импортёра данных.
+<details>
+<summary>4. Настроить файл **consumer-settings.json** для роли импортёра данных.</summary>
+
 <details>
 <summary>Описание файла consumer-settings.json</summary>
 
@@ -335,6 +344,7 @@
 ```
 
 </details>
+</details>
 
 <details>
 <summary>5. Установка и запуск агента как службы Windows.</summary>
@@ -367,7 +377,6 @@ sc create "DaJet Agent Service" binPath="D:\dajet-agent\DaJet.Agent.Service.exe"
 ```JSON
 РИБ.<код узла отправителя>.<код узла получателя>
 ```
-
 Например, очереди для обмена между тремя узлами РИБ могут выглядеть так:
 ![Пример настройки очередей RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/RMQ-monitor.png)
 
@@ -378,7 +387,7 @@ sc create "DaJet Agent Service" binPath="D:\dajet-agent\DaJet.Agent.Service.exe"
 </details>
 
 <details>
-<summary>Проверка работы обмена данными</summary>
+<summary>7. Проверка работы обмена данными</summary>
 
 1. В каждом узле обмена данными должен быть одноимённый план обмена.
 2. В составе каждого из этих планов обмена должен присутствовать идентичный объект метаданных, например, справочник "Номенклатура".
