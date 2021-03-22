@@ -5,7 +5,6 @@ using DaJet.Metadata.Mappers;
 using DaJet.Metadata.Model;
 using RabbitMQ.Client;
 using System;
-using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.IO;
@@ -102,7 +101,7 @@ namespace DaJet.Agent.CLI
                 }
                 catch (Exception error)
                 {
-                    Console.WriteLine(Utilities.ExceptionHelper.GetErrorText(error));
+                    Console.WriteLine(ExceptionHelper.GetErrorText(error));
                 }
                 Console.WriteLine();
                 Console.WriteLine(PRESS_ANY_KEY_TO_EXIT_MESSAGE);
@@ -114,23 +113,22 @@ namespace DaJet.Agent.CLI
 
         private static void GenerateSettingsFiles(string ms, string pg, string d, string u, string p, FileInfo o)
         {
-            IMetadataFileReader fileReader = null;
+            IMetadataService metadataService = new MetadataService();
             if (!string.IsNullOrWhiteSpace(ms))
             {
-                fileReader = new MetadataFileReader();
-                fileReader.ConfigureConnectionString(ms, d, u, p);
+                metadataService.UseDatabaseProvider(DatabaseProviders.SQLServer);
+                metadataService.ConfigureConnectionString(ms, d, u, p);
             }
-            else if (!string.IsNullOrWhiteSpace(pg))
+            else
             {
-                fileReader = new PostgresMetadataFileReader();
-                fileReader.ConfigureConnectionString(pg, d, u, p);
+                metadataService.UseDatabaseProvider(DatabaseProviders.PostgreSQL);
+                metadataService.ConfigureConnectionString(pg, d, u, p);
             }
 
-            IMetadataReader metadata = new MetadataReader(fileReader);
-            InfoBase infoBase = metadata.LoadInfoBase();
+            InfoBase infoBase = metadataService.LoadInfoBase();
 
-            MessageConsumerSettings consumerSettings = CreateConsumerSettings(infoBase, fileReader);
-            MessageProducerSettings producerSettings = CreateProducerSettings(infoBase, fileReader);
+            MessageConsumerSettings consumerSettings = CreateConsumerSettings(infoBase, metadataService);
+            MessageProducerSettings producerSettings = CreateProducerSettings(infoBase, metadataService);
 
             string consumerPath = Path.Combine(o.FullName, CONSUMER_SETTINGS_FILE_NAME);
             string producerPath = Path.Combine(o.FullName, PRODUCER_SETTINGS_FILE_NAME);
@@ -139,53 +137,32 @@ namespace DaJet.Agent.CLI
             SaveProducerSettings(producerPath, producerSettings);
         }
 
-        private static MessageConsumerSettings CreateConsumerSettings(InfoBase infoBase, IMetadataFileReader fileReader)
+        private static MessageConsumerSettings CreateConsumerSettings(InfoBase infoBase, IMetadataService metadataService)
         {
             MessageConsumerSettings settings = new MessageConsumerSettings();
 
-            MetaObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
+            MetadataObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
             if (metaObject == null) return settings;
 
-            bool MSSQL = (fileReader is MetadataFileReader);
-            string tableName = string.Empty;
-            ISqlMetadataReader sqlReader = null;
-            if (MSSQL)
-            {
-                tableName = metaObject.TableName;
-                sqlReader = new SqlMetadataReader();
-            }
-            else
-            {
-                tableName = metaObject.TableName.ToLowerInvariant();
-                sqlReader = new PostgresMetadataReader();
-            }
-            sqlReader.UseConnectionString(fileReader.ConnectionString);
-            List<SqlFieldInfo> sqlFields = sqlReader.GetSqlFieldsOrderedByName(tableName);
-            if (sqlFields.Count == 0)
-            {
-                return settings;
-            }
-
-            MetadataCompareAndMergeService merger = new MetadataCompareAndMergeService();
-            merger.MergeProperties(metaObject, sqlFields);
+            metadataService.EnrichFromDatabase(metaObject);
 
             settings.DatabaseSettings = new Consumer.DatabaseSettings()
             {
-                DatabaseProvider = MSSQL ? Utilities.DatabaseProviders.SQLServer : Utilities.DatabaseProviders.PostgreSQL,
-                ConnectionString = fileReader.ConnectionString,
+                DatabaseProvider = metadataService.DatabaseProvider,
+                ConnectionString = metadataService.ConnectionString,
                 DatabaseQueue = new Consumer.DatabaseQueue()
                 {
-                    TableName = tableName,
+                    TableName = metaObject.TableName,
                     ObjectName = string.Format("{0}.{1}", METAOBJECT_BASE_NAME, CONSUMER_TABLE_QUEUE_NAME)
                 }
             };
-            foreach (MetaProperty property in metaObject.Properties)
+            foreach (MetadataProperty property in metaObject.Properties)
             {
-                foreach (MetaField field in property.Fields)
+                foreach (DatabaseField field in property.Fields)
                 {
                     settings.DatabaseSettings.DatabaseQueue.Fields.Add(new Consumer.TableField()
                     {
-                        Name = MSSQL ? field.Name : field.Name.ToLowerInvariant(),
+                        Name = field.Name,
                         Property = property.Name
                     });
                 }
@@ -209,53 +186,32 @@ namespace DaJet.Agent.CLI
             }
         }
 
-        private static MessageProducerSettings CreateProducerSettings(InfoBase infoBase, IMetadataFileReader fileReader)
+        private static MessageProducerSettings CreateProducerSettings(InfoBase infoBase, IMetadataService metadataService)
         {
             MessageProducerSettings settings = new MessageProducerSettings();
 
-            MetaObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
+            MetadataObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
             if (metaObject == null) return settings;
-            
-            bool MSSQL = (fileReader is MetadataFileReader);
-            string tableName = string.Empty;
-            ISqlMetadataReader sqlReader = null;
-            if (MSSQL)
-            {
-                tableName = metaObject.TableName;
-                sqlReader = new SqlMetadataReader();
-            }
-            else
-            {
-                tableName = metaObject.TableName.ToLowerInvariant();
-                sqlReader = new PostgresMetadataReader();
-            }
-            sqlReader.UseConnectionString(fileReader.ConnectionString);
-            List<SqlFieldInfo> sqlFields = sqlReader.GetSqlFieldsOrderedByName(tableName);
-            if (sqlFields.Count == 0)
-            {
-                return settings;
-            }
 
-            MetadataCompareAndMergeService merger = new MetadataCompareAndMergeService();
-            merger.MergeProperties(metaObject, sqlFields);
+            metadataService.EnrichFromDatabase(metaObject);
 
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
-                DatabaseProvider = MSSQL ? Utilities.DatabaseProviders.SQLServer : Utilities.DatabaseProviders.PostgreSQL,
-                ConnectionString = fileReader.ConnectionString,
+                DatabaseProvider = metadataService.DatabaseProvider,
+                ConnectionString = metadataService.ConnectionString,
                 DatabaseQueue = new Producer.DatabaseQueue()
                 {
-                    TableName = tableName,
+                    TableName = metaObject.TableName,
                     ObjectName = string.Format("{0}.{1}", METAOBJECT_BASE_NAME, PRODUCER_TABLE_QUEUE_NAME)
                 }
             };
-            foreach (MetaProperty property in metaObject.Properties)
+            foreach (MetadataProperty property in metaObject.Properties)
             {
-                foreach (MetaField field in property.Fields)
+                foreach (DatabaseField field in property.Fields)
                 {
                     settings.DatabaseSettings.DatabaseQueue.Fields.Add(new Producer.TableField()
                     {
-                        Name = MSSQL ? field.Name : field.Name.ToLowerInvariant(),
+                        Name = field.Name,
                         Property = property.Name
                     });
                 }
@@ -303,32 +259,23 @@ namespace DaJet.Agent.CLI
 
             MessageProducerSettings settings = CreateMessageBrokerSettings(host, port, user, pass);
 
-            Metadata.DatabaseProviders provider;
-            IMetadataFileReader fileReader = null;
+            IMetadataService metadataService = new MetadataService();
             if (!string.IsNullOrWhiteSpace(ms))
             {
-                provider = Metadata.DatabaseProviders.SQLServer;
-                fileReader = new MetadataFileReader();
-                fileReader.ConfigureConnectionString(ms, d, u, p);
-            }
-            else if (!string.IsNullOrWhiteSpace(pg))
-            {
-                provider = Metadata.DatabaseProviders.PostgreSQL;
-                fileReader = new PostgresMetadataFileReader();
-                fileReader.ConfigureConnectionString(pg, d, u, p);
+                metadataService.UseDatabaseProvider(DatabaseProviders.SQLServer);
+                metadataService.ConfigureConnectionString(ms, d, u, p);
             }
             else
             {
-                provider = Metadata.DatabaseProviders.SQLServer;
+                metadataService.UseDatabaseProvider(DatabaseProviders.PostgreSQL);
+                metadataService.ConfigureConnectionString(pg, d, u, p);
             }
 
             Console.WriteLine(LOADING_METADATA_NOTICE);
-            IMetadataReader metadata = new MetadataReader(fileReader);
-            InfoBase infoBase = metadata.LoadInfoBase();
+            InfoBase infoBase = metadataService.LoadInfoBase();
             Console.WriteLine(METADATA_LOADED_NOTICE);
 
-            MetaObject metaObject = infoBase.Publications.Values
-                .Where(p => p.Name == rmq).FirstOrDefault();
+            MetadataObject metaObject = infoBase.Publications.Values.Where(p => p.Name == rmq).FirstOrDefault();
             if (metaObject == null)
             {
                 Console.WriteLine(string.Format(PUBLICATION_IS_NOT_FOUND_WARNING, rmq));
@@ -342,8 +289,8 @@ namespace DaJet.Agent.CLI
             }
 
             PublicationDataMapper mapper = new PublicationDataMapper();
-            mapper.UseConnectionString(fileReader.ConnectionString);
-            mapper.UseDatabaseProvider(provider);
+            mapper.UseDatabaseProvider(metadataService.DatabaseProvider);
+            mapper.UseConnectionString(metadataService.ConnectionString);
             mapper.SelectSubscribers(publication);
 
             using (IConnection messageBroker = CreateConnection(settings.MessageBrokerSettings))
@@ -409,7 +356,7 @@ namespace DaJet.Agent.CLI
             catch (Exception error)
             {
                 Console.WriteLine(string.Format(FAILED_TO_CREATE_QUEUE_ERROR, queueName));
-                Console.WriteLine(Utilities.ExceptionHelper.GetErrorText(error));
+                Console.WriteLine(ExceptionHelper.GetErrorText(error));
             }
         }
 

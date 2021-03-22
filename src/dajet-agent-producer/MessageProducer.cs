@@ -1,4 +1,5 @@
-﻿using DaJet.Utilities;
+﻿using DaJet.Metadata;
+using DaJet.Utilities;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Exceptions;

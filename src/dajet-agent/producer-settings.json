@@ -5,6 +5,8 @@
     "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 10,
+    "UseNotifications": false,
+    "NotificationQueueName": "dajet-agent-export-queue",
     "WaitForNotificationTimeout": 10,
     "DatabaseQueue": {
       "TableName": "_Reference157",

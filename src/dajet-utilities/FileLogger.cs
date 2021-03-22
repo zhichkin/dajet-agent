@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DaJet.Metadata;
+using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -8,6 +9,7 @@ namespace DaJet.Utilities
     public static class FileLogger
     {
         private static string _filePath;
+        private static object _syncLog = new object();
         private static string GetFilePath()
         {
             if (_filePath != null)
@@ -27,6 +29,13 @@ namespace DaJet.Utilities
             Log(string.Format("[{0}] {1}", token, text));
         }
         public static void Log(string text)
+        {
+            lock (_syncLog)
+            {
+                LogSyncronized(text);
+            }
+        }
+        private static void LogSyncronized(string text)
         {
             string filePath = GetFilePath();
             FileInfo file = new FileInfo(filePath);

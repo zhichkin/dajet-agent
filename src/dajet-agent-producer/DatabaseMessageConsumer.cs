@@ -1,4 +1,4 @@
-﻿using DaJet.Utilities;
+﻿using DaJet.Metadata;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -342,7 +342,7 @@ namespace DaJet.Agent.Producer
             script.AppendLine("conversation_handle AS [dialog_handle],");
             script.AppendLine("message_type_name   AS [message_type],");
             script.AppendLine("message_body        AS [message_body]");
-            script.AppendLine($"FROM [dajet-exchange-export-queue]), TIMEOUT {timeout};");
+            script.AppendLine($"FROM [{Settings.DatabaseSettings.NotificationQueueName}]), TIMEOUT {timeout};");
             return script.ToString();
         }
     }

@@ -1,10 +1,10 @@
 USE [my_exchange];
 GO
 
-IF OBJECT_ID('tr_after_insert_Reference81', 'TR') IS NOT NULL DROP TRIGGER [dbo].[tr_after_insert_Reference81];
+IF OBJECT_ID('tr_after_insert_Reference157', 'TR') IS NOT NULL DROP TRIGGER [dbo].[tr_after_insert_Reference157];
 GO
 
-CREATE TRIGGER [dbo].[tr_after_insert_Reference81] ON [dbo].[_Reference81]
+CREATE TRIGGER [dbo].[tr_after_insert_Reference157] ON [dbo].[_Reference157]
 AFTER INSERT
 AS
 	DECLARE @dialog_handle AS UNIQUEIDENTIFIER;
@@ -37,5 +37,5 @@ AS
 	END;
 GO
 
-ALTER TABLE [dbo].[_Reference81] ENABLE TRIGGER [tr_after_insert_Reference81];
+ALTER TABLE [dbo].[_Reference157] ENABLE TRIGGER [tr_after_insert_Reference157];
 GO

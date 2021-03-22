@@ -1,3 +1,4 @@
+using DaJet.Metadata;
 using DaJet.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

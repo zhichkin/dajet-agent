@@ -1,4 +1,4 @@
-﻿using DaJet.Utilities;
+﻿using DaJet.Metadata;
 
 namespace DaJet.Agent.Producer
 {
@@ -14,6 +14,8 @@ namespace DaJet.Agent.Producer
         public string ConnectionString { get; set; } = string.Empty;
         public int MessagesPerTransaction { get; set; } = 1000;
         public int DatabaseQueryingPeriodicity { get; set; } = 60; // seconds
+        public bool UseNotifications { get; set; } = false;
+        public string NotificationQueueName { get; set; } = "dajet-agent-export-queue";
         public int WaitForNotificationTimeout { get; set; } = 180; // seconds
         public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }

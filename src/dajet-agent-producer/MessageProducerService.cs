@@ -1,3 +1,4 @@
+using DaJet.Metadata;
 using DaJet.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -49,12 +50,13 @@ namespace DaJet.Agent.Producer
                     FileLogger.Log(LOG_TOKEN, string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
                     await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
                 }
-                await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
 
-                if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+                if (Settings.DatabaseSettings.UseNotifications
+                    && Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer
+                    && !string.IsNullOrWhiteSpace(Settings.DatabaseSettings.NotificationQueueName))
                 {
                     int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
-                    if (resultCode == 1) // notifications are not supported by database
+                    if (resultCode != 0) // notifications are not supported or no one notification have been received
                     {
                         await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
                     }

@@ -1,4 +1,5 @@
-﻿using DaJet.Utilities;
+﻿using DaJet.Metadata;
+using DaJet.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using Npgsql;

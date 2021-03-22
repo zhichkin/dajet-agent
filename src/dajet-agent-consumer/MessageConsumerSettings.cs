@@ -1,4 +1,4 @@
-﻿using DaJet.Utilities;
+﻿using DaJet.Metadata;
 using System.Collections.Generic;
 
 namespace DaJet.Agent.Consumer

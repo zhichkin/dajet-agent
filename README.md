@@ -186,6 +186,8 @@
   - **ConnectionString** - строка подключения к базе данных СУБД.
   - **MessagesPerTransaction** - количество исходящих сообщений, обрабатываемых за одну транзакцию СУБД.
   - **DatabaseQueryingPeriodicity** - интервал ожидания новых сообщений в узле обмена в секундах.
+  - **UseNotifications** - включение/выключение ONLINE режима (событийного обмена) для Microsoft SQL Server.
+  - **NotificationQueueName** - имя очереди Microsoft SQL Server для оповещения агента обмена о появлении новых сообщений.
   - **WaitForNotificationTimeout** - таймаут ожидания уведомления о новых сообщениях в узле обмена в секундах (реализовано только для SQL Server).
 Используется для реализации обмена данными в режиме online.
   - **DatabaseQueue** - секция для описания таблицы справочника "ИсходящаяОчередьRabbitMQ".
@@ -214,6 +216,8 @@
     "ConnectionString": "Data Source=SERVER_ADDRESS;Initial Catalog=DATABASE_NAME;Integrated Security=True",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 60,
+    "UseNotifications": true,
+    "NotificationQueueName": "dajet-agent-export-queue",
     "WaitForNotificationTimeout": 180,
     "DatabaseQueue": {
       "TableName": "_Reference157",
@@ -444,5 +448,28 @@ sc create "DaJet Agent Service" binPath="D:\dajet-agent\DaJet.Agent.Service.exe"
 который расположен в корневом каталоге установки агента.
 
 </details>
+
+</details>
+
+<details>
+<summary>Настройка режима ONLINE(событийного обмена данными) для Microsoft SQL Server</summary>
+
+Работа данной опции основана на использовании функциональности SQL Server Service Broker.
+
+Для настройки потребуется выполнить следующие действия:
+- Выполнить SQL-скрипт setup-service-broker.sql из каталога sql\ms в базе данных узла обмена 1С.
+- Выполнить SQL-скрипт export-queue-trigger.sql из каталога sql\ms в базе данных узла обмена 1С.
+
+В этих скриптах необходимо заполнить/заменить следующее:
+- указать актуальное название базы данных узла обмена 1С;
+- имя таблицы справочника 1С "ИсходящаяОчередьRabbitMQ" для создания триггера
+(её название есть в файле настроек producer-settings.json);
+- имя очереди сообщений SQL Server для оповещений агента обмена о появлении новых
+исходящих сообщений для экспорта в RabbitMQ.
+
+Данный режим работы настраивается в файле **producer-settings.json**. См. следующие настройки:
+- **UseNotifications** - включение/выключение ONLINE режима
+- **NotificationQueueName** - имя очереди SQL Server для оповещений
+- **WaitForNotificationTimeout** - время ожидания появления новых сообщений в секундах
 
 </details>
