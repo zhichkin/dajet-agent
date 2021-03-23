@@ -73,7 +73,7 @@ namespace DaJet.Agent.Producer
             int messagesReceived = 0;
             errorMessage = string.Empty;
 
-            FileLogger.Log(LOG_TOKEN, "Start receiving messages.");
+            FileLogger.Log(LOG_TOKEN, "Start processing outgoing messages.");
 
             try
             {
@@ -81,7 +81,7 @@ namespace DaJet.Agent.Producer
                 IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
                 messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
                 sumReceived += messagesReceived;
-                while (messagesReceived > 0)
+                while (messagesReceived > 0 && string.IsNullOrEmpty(errorMessage))
                 {
                     messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
                     sumReceived += messagesReceived;
@@ -93,7 +93,7 @@ namespace DaJet.Agent.Producer
                     + ExceptionHelper.GetErrorText(error);
             }
 
-            FileLogger.Log(LOG_TOKEN, string.Format("{0} messages received.", sumReceived));
+            FileLogger.Log(LOG_TOKEN, string.Format("{0} outgoing messages processed.", sumReceived));
         }
         private int AwaitNotification(int timeout)
         {

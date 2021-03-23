@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
@@ -88,13 +89,21 @@ namespace DaJet.Agent.Producer
                     transaction = connection.BeginTransaction();
                     command.Transaction = transaction;
 
+                    List<DatabaseMessage> batch = new List<DatabaseMessage>();
+
                     reader = command.ExecuteReader();
                     while (reader.Read())
                     {
-                        MessageProducer.Send(CreateDatabaseMessage(reader));
+                        //MessageProducer.Send(CreateDatabaseMessage(reader));
+                        batch.Add(CreateDatabaseMessage(reader));
                     }
                     reader.Close();
                     messagesRecevied = reader.RecordsAffected;
+
+                    if (batch.Count > 0)
+                    {
+                        MessageProducer.SendBatch(batch);
+                    }
 
                     transaction.Commit();
                 }
