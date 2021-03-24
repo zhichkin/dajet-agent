@@ -12,6 +12,11 @@ namespace DaJet.Agent.Producer
     public sealed class MessageProducerService : BackgroundService
     {
         private const string LOG_TOKEN = "P-SVC";
+        private const string START_PROCESSING_OUTGOING_MESSAGES_MESSAGE = "Start processing outgoing messages ...";
+        private const string OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE = "{0} outgoing messages processed.";
+        private const string DATABASE_NOTIFICATIONS_ARE_NOT_ENABLED_MESSAGE = "Database notifications are not enabled.";
+        private const string START_AWAITING_DATABASE_NOTIFICATION_MESSAGE = "Start awaiting database notification ...";
+        private const string CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE = "Critical error delay of {0} seconds started.";
         private IServiceProvider Services { get; set; }
         private MessageProducerSettings Settings { get; set; }
 
@@ -43,21 +48,29 @@ namespace DaJet.Agent.Producer
         {
             while (!stoppingToken.IsCancellationRequested)
             {
-                ConsumeMessages(out string errorMessage);
-                if (!string.IsNullOrEmpty(errorMessage))
+                try
                 {
-                    FileLogger.Log(LOG_TOKEN, errorMessage);
-                    FileLogger.Log(LOG_TOKEN, string.Format("Critical error delay of {0} seconds started.", Settings.CriticalErrorDelay));
+                    ConsumeMessages();
+                }
+                catch(Exception error)
+                {
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+                    FileLogger.Log(LOG_TOKEN, string.Format(CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
                     await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
+                    continue;
                 }
 
                 if (Settings.DatabaseSettings.UseNotifications
                     && Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer
                     && !string.IsNullOrWhiteSpace(Settings.DatabaseSettings.NotificationQueueName))
                 {
-                    int resultCode = AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
-                    if (resultCode != 0) // notifications are not supported or no one notification have been received
+                    try
                     {
+                        AwaitNotification(Settings.DatabaseSettings.WaitForNotificationTimeout * 1000);
+                    }
+                    catch
+                    {
+                        FileLogger.Log(LOG_TOKEN, DATABASE_NOTIFICATIONS_ARE_NOT_ENABLED_MESSAGE);
                         await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
                     }
                 }
@@ -67,71 +80,32 @@ namespace DaJet.Agent.Producer
                 }
             }
         }
-        private void ConsumeMessages(out string errorMessage)
+        private void ConsumeMessages()
         {
             int sumReceived = 0;
             int messagesReceived = 0;
-            errorMessage = string.Empty;
 
-            FileLogger.Log(LOG_TOKEN, "Start processing outgoing messages.");
+            FileLogger.Log(LOG_TOKEN, START_PROCESSING_OUTGOING_MESSAGES_MESSAGE);
 
-            try
+            IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
+
+            int messagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
+            do
             {
-                int messagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
-                IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
-                messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
+                messagesReceived = consumer.ConsumeMessages(messagesPerTransaction);
                 sumReceived += messagesReceived;
-                while (messagesReceived > 0 && string.IsNullOrEmpty(errorMessage))
-                {
-                    messagesReceived = consumer.ConsumeMessages(messagesPerTransaction, out errorMessage);
-                    sumReceived += messagesReceived;
-                }
             }
-            catch (Exception error)
-            {
-                errorMessage += (string.IsNullOrEmpty(errorMessage) ? string.Empty : Environment.NewLine)
-                    + ExceptionHelper.GetErrorText(error);
-            }
-
-            FileLogger.Log(LOG_TOKEN, string.Format("{0} outgoing messages processed.", sumReceived));
+            while (messagesReceived > 0);
+            
+            FileLogger.Log(LOG_TOKEN, string.Format(OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE, sumReceived));
         }
-        private int AwaitNotification(int timeout)
+        private void AwaitNotification(int timeout)
         {
-            int resultCode = 0;
-            string errorMessage = string.Empty;
+            FileLogger.Log(LOG_TOKEN, START_AWAITING_DATABASE_NOTIFICATION_MESSAGE);
 
-            FileLogger.Log(LOG_TOKEN, "Start awaiting notification ...");
+            IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
 
-            try
-            {
-                IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
-                resultCode = consumer.AwaitNotification(timeout, out errorMessage);
-            }
-            catch (Exception error)
-            {
-                errorMessage += (string.IsNullOrEmpty(errorMessage) ? string.Empty : Environment.NewLine)
-                    + ExceptionHelper.GetErrorText(error);
-            }
-
-            if (!string.IsNullOrEmpty(errorMessage))
-            {
-                FileLogger.Log(LOG_TOKEN, errorMessage);
-            }
-
-            if (resultCode == 0)
-            {
-                FileLogger.Log(LOG_TOKEN, "Notification received successfully.");
-            }
-            else if (resultCode == 1)
-            {
-                FileLogger.Log(LOG_TOKEN, "Notifications are not supported.");
-            }
-            else if (resultCode == 2)
-            {
-                FileLogger.Log(LOG_TOKEN, "No notification received.");
-            }
-
-            return resultCode;
+            consumer.AwaitNotification(timeout);
         }
     }
 }

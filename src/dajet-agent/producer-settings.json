@@ -1,13 +1,13 @@
 ﻿{
-  "CriticalErrorDelay": 30,
+  "CriticalErrorDelay": 60,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
     "MessagesPerTransaction": 1000,
-    "DatabaseQueryingPeriodicity": 10,
+    "DatabaseQueryingPeriodicity": 30,
     "UseNotifications": false,
     "NotificationQueueName": "dajet-agent-export-queue",
-    "WaitForNotificationTimeout": 10,
+    "WaitForNotificationTimeout": 60,
     "DatabaseQueue": {
       "TableName": "_Reference157",
       "ObjectName": "Справочник.ИсходящаяОчередьRabbitMQ",

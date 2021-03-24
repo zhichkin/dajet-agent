@@ -13,8 +13,8 @@ namespace DaJet.Agent.Producer
 {
     public interface IDatabaseMessageConsumer
     {
-        int ConsumeMessages(int count, out string errorMessage);
-        int AwaitNotification(int timeout, out string errorMessage);
+        int ConsumeMessages(int count);
+        void AwaitNotification(int timeout);
     }
     public sealed class DatabaseMessageConsumer : IDatabaseMessageConsumer
     {
@@ -25,121 +25,74 @@ namespace DaJet.Agent.Producer
             Settings = options.Value;
             MessageProducer = messageProducer;
         }
-        private void RollbackTransaction(DbTransaction transaction, DbDataReader reader, out string errorMessage)
+        
+        public int ConsumeMessages(int messageCount)
         {
-            errorMessage = string.Empty;
-
-            if (transaction == null) return;
-
-            try
-            {
-                if (reader != null && !reader.IsClosed)
-                {
-                    reader.Close();
-                }
-                transaction.Rollback();
-            }
-            catch (Exception error)
-            {
-                errorMessage = ExceptionHelper.GetErrorText(error);
-            }
+            return ConsumeDatabaseMessages(messageCount);
         }
-        private void DisposeDatabaseResources(DbConnection connection, DbDataReader reader, DbCommand command)
-        {
-            if (reader != null)
-            {
-                if (!reader.IsClosed && reader.HasRows)
-                {
-                    command.Cancel();
-                }
-                reader.Dispose();
-            }
-            if (command != null) command.Dispose();
-            if (connection != null) connection.Dispose();
-        }
-
-        public int ConsumeMessages(int messageCount, out string errorMessage)
+        private DbConnection CreateDbConnection()
         {
             if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
             {
-                return ConsumeSQLServerMessages(messageCount, out errorMessage);
+                return new SqlConnection(Settings.DatabaseSettings.ConnectionString);
             }
-            return ConsumePostgreSQLMessages(messageCount, out errorMessage);
+            return new NpgsqlConnection(Settings.DatabaseSettings.ConnectionString);
         }
-
-        #region "Microsoft SQL Server"
-
-        private int ConsumeSQLServerMessages(int messageCount, out string errorMessage)
+        private int ConsumeDatabaseMessages(int messageCount)
         {
             int messagesRecevied = 0;
-            errorMessage = string.Empty;
+            using (DbConnection connection = CreateDbConnection())
             {
-                SqlDataReader reader = null;
-                SqlTransaction transaction = null;
-                SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString);
-
-                SqlCommand command = connection.CreateCommand();
-                command.CommandType = CommandType.Text;
-                command.CommandText = ReceiveMessagesScript(messageCount);
-                command.CommandTimeout = 60; // seconds
-
-                try
+                connection.Open();
+                using (DbTransaction transaction = connection.BeginTransaction())
+                using (DbCommand command = connection.CreateCommand())
                 {
-                    connection.Open();
-                    transaction = connection.BeginTransaction();
+                    command.Connection = connection;
                     command.Transaction = transaction;
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = ConsumeDatabaseMessagesScript(messageCount);
+                    command.CommandTimeout = 60; // seconds
 
-                    List<DatabaseMessage> batch = new List<DatabaseMessage>();
-
-                    reader = command.ExecuteReader();
-                    while (reader.Read())
+                    try
                     {
-                        //MessageProducer.Send(CreateDatabaseMessage(reader));
-                        batch.Add(CreateDatabaseMessage(reader));
-                    }
-                    reader.Close();
-                    messagesRecevied = reader.RecordsAffected;
+                        List<DatabaseMessage> batch = new List<DatabaseMessage>();
+                        using (DbDataReader reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                batch.Add(CreateDatabaseMessage(reader));
+                            }
+                            reader.Close();
+                            messagesRecevied = reader.RecordsAffected;
+                        }
+                        if (batch.Count > 0) MessageProducer.Publish(batch);
 
-                    if (batch.Count > 0)
+                        transaction.Commit();
+                    }
+                    catch (Exception error)
                     {
-                        MessageProducer.SendBatch(batch);
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        finally
+                        {
+                            throw error;
+                        }
                     }
-
-                    transaction.Commit();
-                }
-                catch (Exception error)
-                {
-                    errorMessage = ExceptionHelper.GetErrorText(error);
-
-                    RollbackTransaction(transaction, reader, out string rollbackError);
-
-                    if (!string.IsNullOrEmpty(rollbackError))
-                    {
-                        errorMessage += Environment.NewLine + rollbackError;
-                    }
-                }
-                finally
-                {
-                    DisposeDatabaseResources(connection, reader, command);
                 }
             }
             return messagesRecevied;
         }
-        private DatabaseMessage CreateDatabaseMessage(SqlDataReader reader)
+        private string ConsumeDatabaseMessagesScript(int messageCount)
         {
-            DatabaseMessage message = new DatabaseMessage();
-            message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
-            message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid(reader.GetSqlBinary(1).Value);
-            message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
-            message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
-            message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
-            message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
-            message.OperationType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
-            message.MessageType = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
-            message.MessageBody = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
-            return message;
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            {
+                return MS_ReceiveMessagesScript(messageCount);
+            }
+            return PG_ReceiveMessagesScript(messageCount);
         }
-        private string ReceiveMessagesScript(int messageCount)
+        private string MS_ReceiveMessagesScript(int messageCount)
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
@@ -174,86 +127,7 @@ namespace DaJet.Agent.Producer
             script.AppendLine("deleted.[ТипОперации], deleted.[ТипСообщения], deleted.[ТелоСообщения];");
             return script.ToString();
         }
-
-        #endregion
-
-        #region "PostgreSQL"
-
-        private int ConsumePostgreSQLMessages(int messageCount, out string errorMessage)
-        {
-            int messagesRecevied = 0;
-            errorMessage = string.Empty;
-            {
-                NpgsqlDataReader reader = null;
-                NpgsqlTransaction transaction = null;
-                NpgsqlConnection connection = new NpgsqlConnection(Settings.DatabaseSettings.ConnectionString);
-
-                NpgsqlCommand command = connection.CreateCommand();
-                command.CommandType = CommandType.Text;
-                command.CommandText = PostgreSQLReceiveMessagesScript(messageCount);
-                command.CommandTimeout = 60; // seconds
-                //command.UnknownResultTypeList = new[]
-                //{
-                //    false, // Код
-                //    false, // Ссылка
-                //    false, // ВерсияДанных
-                //    false, // ДатаВремя
-                //    true, // Отправитель
-                //    true, // Получатели
-                //    true, // ТипОперации
-                //    true, // ТипСообщения
-                //    true // ТелоСообщения
-                //};
-
-                try
-                {
-                    connection.Open();
-                    transaction = connection.BeginTransaction();
-                    command.Transaction = transaction;
-
-                    reader = command.ExecuteReader();
-                    while (reader.Read())
-                    {
-                        MessageProducer.Send(CreatePostgreSQLMessage(reader));
-                    }
-                    reader.Close();
-                    messagesRecevied = reader.RecordsAffected;
-
-                    transaction.Commit();
-                }
-                catch (Exception error)
-                {
-                    errorMessage = ExceptionHelper.GetErrorText(error);
-
-                    RollbackTransaction(transaction, reader, out string rollbackError);
-
-                    if (!string.IsNullOrEmpty(rollbackError))
-                    {
-                        errorMessage += Environment.NewLine + rollbackError;
-                    }
-                }
-                finally
-                {
-                    DisposeDatabaseResources(connection, reader, command);
-                }
-            }
-            return messagesRecevied;
-        }
-        private DatabaseMessage CreatePostgreSQLMessage(NpgsqlDataReader reader)
-        {
-            DatabaseMessage message = new DatabaseMessage();
-            message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
-            message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid((byte[])reader[1]);
-            message.Version = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
-            message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
-            message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
-            message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
-            message.OperationType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
-            message.MessageType = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
-            message.MessageBody = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
-            return message;
-        }
-        private string PostgreSQLReceiveMessagesScript(int messageCount)
+        private string PG_ReceiveMessagesScript(int messageCount)
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
@@ -284,65 +158,70 @@ namespace DaJet.Agent.Producer
             script.AppendLine($"CAST(t.{field5} AS varchar) AS \"ТипСообщения\", CAST(t.{field6} AS text) AS \"ТелоСообщения\";");
             return script.ToString();
         }
-
-        #endregion
-
-        public int AwaitNotification(int timeout, out string errorMessage)
+        private DatabaseMessage CreateDatabaseMessage(DbDataReader reader)
         {
-            int resultCode = 0;
-            errorMessage = string.Empty;
+            DatabaseMessage message = new DatabaseMessage();
+            message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
+            message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid((byte[])reader[1]);
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
             {
-                SqlDataReader reader = null;
-                SqlTransaction transaction = null;
-                SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString);
+                message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
+            }
+            else
+            {
+                message.Version = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+            }
+            message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
+            message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+            message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+            message.OperationType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
+            message.MessageType = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
+            message.MessageBody = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+            return message;
+        }
 
-                SqlCommand command = connection.CreateCommand();
-                command.CommandType = CommandType.Text;
-                command.CommandText = AwaitNotificationScript(timeout);
-                command.CommandTimeout = timeout / 1000 + 10;
-
-                try
+        public void AwaitNotification(int timeout)
+        {
+            using (DbConnection connection = CreateDbConnection())
+            {
+                connection.Open();
+                using (DbTransaction transaction = connection.BeginTransaction())
+                using (DbCommand command = connection.CreateCommand())
                 {
-                    connection.Open();
-                    transaction = connection.BeginTransaction();
+                    command.Connection = connection;
                     command.Transaction = transaction;
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = AwaitNotificationScript(timeout);
+                    command.CommandTimeout = timeout / 1000 + (timeout == 0 ? 0 : 10); // seconds
 
-                    reader = command.ExecuteReader();
-                    if (reader.Read())
+                    try
                     {
-                        resultCode = 0; // notification received successfully
-                        byte[] message_body = new byte[16];
-                        Guid dialog_handle = reader.GetGuid("dialog_handle");
-                        string message_type = reader.GetString("message_type");
-                        long readBytes = reader.GetBytes("message_body", 0, message_body, 0, 16);
+                        using (DbDataReader reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                byte[] message_body = new byte[16];
+                                Guid dialog_handle = reader.GetGuid("dialog_handle");
+                                string message_type = reader.GetString("message_type");
+                                long readBytes = reader.GetBytes("message_body", 0, message_body, 0, 16);
+                            }
+                            reader.Close();
+                        }
+                        transaction.Commit();
                     }
-                    else
+                    catch (Exception error)
                     {
-                        resultCode = 2; // no notification received
+                        try
+                        {
+                            transaction.Rollback();
+                        }
+                        finally
+                        {
+                            throw error;
+                        }
                     }
-                    reader.Close();
-
-                    transaction.Commit();
-                }
-                catch (Exception error)
-                {
-                    resultCode = 1; // notifications are not supported by database
-
-                    errorMessage = ExceptionHelper.GetErrorText(error);
-
-                    RollbackTransaction(transaction, reader, out string rollbackError);
-
-                    if (!string.IsNullOrEmpty(rollbackError))
-                    {
-                        errorMessage += Environment.NewLine + rollbackError;
-                    }
-                }
-                finally
-                {
-                    DisposeDatabaseResources(connection, reader, command);
                 }
             }
-            return resultCode;
         }
         private string AwaitNotificationScript(int timeout)
         {

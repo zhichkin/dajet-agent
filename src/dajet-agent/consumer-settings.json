@@ -1,5 +1,5 @@
 ﻿{
-  "CriticalErrorDelay": 30,
+  "CriticalErrorDelay": 60,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
@@ -59,6 +59,6 @@
   },
   "ThisNode": "MAIN",
   "SenderNodes": [
-    "N001", "N002", "N003"
+    "N001", "N002"
   ]
 }

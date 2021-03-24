@@ -14,5 +14,6 @@ namespace DaJet.Agent.Producer
         public string OperationType { get; set; }
         public string MessageType { get; set; }
         public string MessageBody { get; set; }
+        public byte[] MessageBytes { get; set; }
     }
 }

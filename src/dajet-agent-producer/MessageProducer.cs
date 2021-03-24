@@ -17,13 +17,11 @@ namespace DaJet.Agent.Producer
     public interface IMessageProducer : IDisposable
     {
         void CreateQueue(string name);
-        void Send(DatabaseMessage message);
-        void SendBatch(List<DatabaseMessage> messageBatch);
+        void Publish(List<DatabaseMessage> messageBatch);
     }
     public sealed class MessageProducer: IMessageProducer
     {
         private const string LOG_TOKEN = "P-MSG";
-        private const string QUEUE_NOT_FOUND_ERROR_TEMPLATE = "Queue \"{0}\" is not found.";
         private const string PUBLISHER_CONFIRMATION_ERROR_MESSAGE = "The sending of the message has not been confirmed. Check the availability of the message broker.";
 
         private IModel Channel { get; set; }        
@@ -129,48 +127,7 @@ namespace DaJet.Agent.Producer
             });
             return message;
         }
-        public void Send(DatabaseMessage message)
-        {
-            InitializeChannel();
-
-            string[] recipients = GetRecipients(message);
-            if (recipients.Length == 0) return;
-
-            string exchangeName = string.Empty;
-            foreach (string recipient in recipients)
-            {
-                exchangeName = CreateExchangeName(message.Sender, recipient);
-                JsonDataTransferMessage dtm = ProduceDataTransferMessage(message);
-                string json = JsonSerializer.Serialize(dtm);
-                byte[] messageBytes = Encoding.UTF8.GetBytes(json);
-                try
-                {
-                    Channel.BasicPublish(exchangeName, string.Empty, true, Properties, messageBytes);
-                    bool confirmed = Channel.WaitForConfirms(TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConfirmationTimeout));
-                    if (!confirmed)
-                    {
-                        throw new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE);
-                    }
-                }
-                catch (OperationInterruptedException rabbitError)
-                {
-                    if (!string.IsNullOrWhiteSpace(rabbitError.Message)
-                        && rabbitError.Message.Contains("NOT_FOUND")
-                        && rabbitError.Message.Contains(exchangeName))
-                    {
-                        // queue not found
-                        FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(rabbitError));
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
-            }
-        }
-
-
-
+        
         private IConnection Connection { get; set; }
         private List<SendingChannel> Channels { get; set; } = new List<SendingChannel>();
         private IConnection CreateConnection()
@@ -269,7 +226,7 @@ namespace DaJet.Agent.Producer
         private ConcurrentQueue<Exception> SendingExceptions;
         private List<KeyValuePair<string, Queue<DatabaseMessage>>> ProducerQueuesList;
         private Dictionary<string, Queue<DatabaseMessage>> ProducerQueues = new Dictionary<string, Queue<DatabaseMessage>>();
-        public void SendBatch(List<DatabaseMessage> messageBatch)
+        public void Publish(List<DatabaseMessage> messageBatch)
         {
             if (messageBatch == null || messageBatch.Count == 0) return;
 
@@ -282,7 +239,7 @@ namespace DaJet.Agent.Producer
             PrepareProducerQueues(messageBatch);
             try
             {
-                ProcessProducerQueues();
+                ProcessProducerQueuesInParallel();
             }
             catch (Exception error)
             {
@@ -306,6 +263,8 @@ namespace DaJet.Agent.Producer
                 recipients = GetRecipients(message);
                 if (recipients.Length == 0) continue;
 
+                SerializeDatabaseMessage(message);
+
                 foreach (string recipient in recipients)
                 {
                     exchangeName = CreateExchangeName(message.Sender, recipient);
@@ -323,7 +282,13 @@ namespace DaJet.Agent.Producer
             }
             ProducerQueuesList = ProducerQueues.ToList();
         }
-        private void ProcessProducerQueues()
+        private void SerializeDatabaseMessage(DatabaseMessage message)
+        {
+            JsonDataTransferMessage dtm = ProduceDataTransferMessage(message);
+            string json = JsonSerializer.Serialize(dtm);
+            message.MessageBytes = Encoding.UTF8.GetBytes(json);
+        }
+        private void ProcessProducerQueuesInParallel()
         {
             using (SendingCancellation = new CancellationTokenSource())
             {
@@ -332,18 +297,18 @@ namespace DaJet.Agent.Producer
                     CancellationToken = SendingCancellation.Token,
                     MaxDegreeOfParallelism = Environment.ProcessorCount
                 };
-                Parallel.For(0, Channels.Count, options, ProcessProducerQueues);
+                Parallel.For(0, Channels.Count, options, ProcessProducerQueuesInBackground);
             }
         }
-        private void ProcessProducerQueues(int channelId)
+        private void ProcessProducerQueuesInBackground(int channelId)
         {
             SendingChannel sendingChannel = Channels[channelId];
 
             int messagesSent = 0;
             int nextQueue = channelId;
+            List<string> messageQueues = new List<string>();
             while (nextQueue < ProducerQueuesList.Count)
             {
-                int messagesCount = 0;
                 var item = ProducerQueuesList[nextQueue];
 
                 if (item.Value.Count == 0)
@@ -352,21 +317,14 @@ namespace DaJet.Agent.Producer
                     continue;
                 }
 
-                FileLogger.Log(LOG_TOKEN, $"Sending {item.Value.Count} messages to \"{item.Key}\" queue...");
-
                 while (item.Value.TryDequeue(out DatabaseMessage message))
                 {
                     if (SendingCancellation.IsCancellationRequested) return;
 
-                    JsonDataTransferMessage dtm = ProduceDataTransferMessage(message);
-                    string json = JsonSerializer.Serialize(dtm);
-                    byte[] messageBytes = Encoding.UTF8.GetBytes(json);
-
                     try
                     {
-                        sendingChannel.Channel.BasicPublish(item.Key, string.Empty, true, sendingChannel.Properties, messageBytes);
+                        sendingChannel.Channel.BasicPublish(item.Key, string.Empty, true, sendingChannel.Properties, message.MessageBytes);
                         messagesSent++;
-                        messagesCount++;
                     }
                     catch (Exception error)
                     {
@@ -376,9 +334,8 @@ namespace DaJet.Agent.Producer
                     }
                 }
 
-                FileLogger.Log(LOG_TOKEN, $"{messagesCount} messages have been sent to \"{item.Key}\" queue.");
-
                 nextQueue += Channels.Count;
+                messageQueues.Add(item.Key);
             }
             if (messagesSent > 0)
             {
@@ -404,6 +361,13 @@ namespace DaJet.Agent.Producer
                     SendingExceptions.Enqueue(error);
                     SendingCancellation.Cancel();
                 }
+
+                string destinationQueues = string.Empty;
+                foreach (string destination in messageQueues)
+                {
+                    destinationQueues += (string.IsNullOrEmpty(destinationQueues) ? destination : ", " + destination);
+                }
+                FileLogger.Log(LOG_TOKEN, $"{messagesSent} messages have been sent to destination queues: {destinationQueues}.");
             }
         }
         private void ProcessExceptions()
