@@ -75,13 +75,13 @@ namespace DaJet.Agent.Consumer
 
                 command.Parameters.AddWithValue("p1", message.Code);
                 command.Parameters.AddWithValue("p2", message.Uuid);
-                command.Parameters.AddWithValue("p3", message.DeletionMark);
-                command.Parameters.AddWithValue("p4", message.PredefinedID);
-                command.Parameters.AddWithValue("p5", message.DateTimeStamp);
-                command.Parameters.AddWithValue("p6", message.Sender);
-                command.Parameters.AddWithValue("p7", message.OperationType);
-                command.Parameters.AddWithValue("p8", message.MessageType);
-                command.Parameters.AddWithValue("p9", message.MessageBody);
+                command.Parameters.AddWithValue("p3", message.DateTimeStamp);
+                command.Parameters.AddWithValue("p4", message.Sender);
+                command.Parameters.AddWithValue("p5", message.OperationType);
+                command.Parameters.AddWithValue("p6", message.MessageType);
+                command.Parameters.AddWithValue("p7", message.MessageBody);
+                command.Parameters.AddWithValue("p8", message.ErrorCount);
+                command.Parameters.AddWithValue("p9", message.ErrorDescription);
 
                 try
                 {
@@ -104,17 +104,20 @@ namespace DaJet.Agent.Consumer
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
+            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
+            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
+            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
+            string field5 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
+            string field6 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
+            string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field8 = queue.Fields.Where(f => f.Property == "КоличествоОшибок").FirstOrDefault()?.Name;
+            string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
 
             StringBuilder script = new StringBuilder();
             script.AppendLine($"INSERT [{tableName}]");
-            script.AppendLine("([_Code], [_IDRRef], [_Marked], [_PredefinedID],");
-            script.AppendLine($"[{field1}], [{field2}], [{field3}], [{field4}], [{field5}])");
-            script.AppendLine("VALUES (@p1, CAST(@p2 AS binary(16)), @p3, CAST(@p4 AS binary(16)), @p5, @p6, @p7, @p8, @p9);");
+            script.AppendLine($"([{field1}], [{field2}], [{field3}], [{field4}], [{field5}], [{field6}], [{field7}], [{field8}], [{field9}])");
+            script.AppendLine("VALUES (@p1, CAST(@p2 AS binary(16)), @p3, @p4, @p5, @p6, @p7, @p8, @p9);");
             return script.ToString();
         }
 
@@ -134,18 +137,13 @@ namespace DaJet.Agent.Consumer
 
                 command.Parameters.AddWithValue("p1", message.Code);
                 command.Parameters.AddWithValue("p2", message.Uuid.ToByteArray());
-                command.Parameters.AddWithValue("p3", message.DeletionMark);
-                command.Parameters.AddWithValue("p4", message.PredefinedID.ToByteArray());
-                command.Parameters.AddWithValue("p5", message.DateTimeStamp);
-                command.Parameters.AddWithValue("p6", message.Sender);
-                command.Parameters.AddWithValue("p7", message.OperationType);
-                command.Parameters.AddWithValue("p8", message.MessageType);
-                command.Parameters.AddWithValue("p9", message.MessageBody);
-
-                //command.CommandText = command.CommandText.Replace("@p6", "'" + message.Sender + "'");
-                //command.CommandText = command.CommandText.Replace("@p7", "'" + message.OperationType + "'");
-                //command.CommandText = command.CommandText.Replace("@p8", "'" + message.MessageType + "'");
-                //command.CommandText = command.CommandText.Replace("@p9", "'" + message.MessageBody + "'");
+                command.Parameters.AddWithValue("p3", message.DateTimeStamp);
+                command.Parameters.AddWithValue("p4", message.Sender);
+                command.Parameters.AddWithValue("p5", message.OperationType);
+                command.Parameters.AddWithValue("p6", message.MessageType);
+                command.Parameters.AddWithValue("p7", message.MessageBody);
+                command.Parameters.AddWithValue("p8", message.ErrorCount);
+                command.Parameters.AddWithValue("p9", message.ErrorDescription);
 
                 try
                 {
@@ -168,18 +166,21 @@ namespace DaJet.Agent.Consumer
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
+            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
+            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
+            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
+            string field5 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
+            string field6 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
+            string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field8 = queue.Fields.Where(f => f.Property == "КоличествоПопыток").FirstOrDefault()?.Name;
+            string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
 
             StringBuilder script = new StringBuilder();
             script.AppendLine($"INSERT INTO {tableName}");
-            script.AppendLine("(_code, _idrref, _marked, _predefinedid,");
-            script.AppendLine($"{field1}, {field2}, {field3}, {field4}, {field5})");
-            script.AppendLine("VALUES (@p1, @p2, @p3, @p4, @p5,");
-            script.AppendLine("CAST(@p6 AS mvarchar), CAST(@p7 AS mvarchar), CAST(@p8 AS mvarchar), CAST(@p9 AS mvarchar));");
+            script.AppendLine($"({field1}, {field2}, {field3}, {field4}, {field5}, {field6}, {field7}, {field8}, {field9})");
+            script.AppendLine("VALUES (@p1, @p2, @p3, CAST(@p4 AS mvarchar), CAST(@p5 AS mvarchar), ");
+            script.AppendLine("CAST(@p6 AS mvarchar), CAST(@p7 AS mvarchar), @p8, CAST(@p9 AS mvarchar));");
             return script.ToString();
         }
 

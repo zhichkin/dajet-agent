@@ -96,33 +96,34 @@ namespace DaJet.Agent.Producer
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "Получатели").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field6 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
+            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
+            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
+            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
+            string field5 = queue.Fields.Where(f => f.Property == "Получатели").FirstOrDefault()?.Name;
+            string field6 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
+            string field7 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
+            string field8 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
 
             StringBuilder script = new StringBuilder();
             script.AppendLine("WITH [CTE] AS");
             script.AppendLine("(");
-            script.AppendLine($"SELECT TOP({messageCount})");
-            script.AppendLine("[_Code] AS [Код],");
-            script.AppendLine("[_IDRRef] AS [Ссылка],");
-            script.AppendLine("[_Version] AS [ВерсияДанных],");
-            script.AppendLine($"[{field1}] AS [ДатаВремя],");
-            script.AppendLine($"[{field2}] AS [Отправитель],");
-            script.AppendLine($"[{field3}] AS [Получатели],");
-            script.AppendLine($"[{field4}] AS [ТипОперации],");
-            script.AppendLine($"[{field5}] AS [ТипСообщения],");
-            script.AppendLine($"[{field6}] AS [ТелоСообщения]");
+            script.AppendLine($"SELECT TOP ({messageCount})");
+            script.AppendLine($"[{field1}] AS [МоментВремени],");
+            script.AppendLine($"[{field2}] AS [Идентификатор],");
+            script.AppendLine($"[{field3}] AS [ДатаВремя],");
+            script.AppendLine($"[{field4}] AS [Отправитель],");
+            script.AppendLine($"[{field5}] AS [Получатели],");
+            script.AppendLine($"[{field6}] AS [ТипОперации],");
+            script.AppendLine($"[{field7}] AS [ТипСообщения],");
+            script.AppendLine($"[{field8}] AS [ТелоСообщения]");
             script.AppendLine("FROM");
             script.AppendLine($"[{tableName}] WITH (ROWLOCK)");
             script.AppendLine("ORDER BY");
-            script.AppendLine("[_Code] ASC, [_IDRRef] ASC");
+            script.AppendLine($"[{field1}] ASC, [{field2}] ASC");
             script.AppendLine(")");
             script.AppendLine("DELETE [CTE]");
-            script.AppendLine("OUTPUT deleted.[Код], deleted.[Ссылка], deleted.[ВерсияДанных],");
+            script.AppendLine("OUTPUT deleted.[МоментВремени], deleted.[Идентификатор],");
             script.AppendLine("deleted.[ДатаВремя], deleted.[Отправитель], deleted.[Получатели],");
             script.AppendLine("deleted.[ТипОперации], deleted.[ТипСообщения], deleted.[ТелоСообщения];");
             return script.ToString();
@@ -131,12 +132,14 @@ namespace DaJet.Agent.Producer
         {
             DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
             string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "Получатели").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field6 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
+            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
+            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
+            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
+            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
+            string field5 = queue.Fields.Where(f => f.Property == "Получатели").FirstOrDefault()?.Name;
+            string field6 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
+            string field7 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
+            string field8 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
 
             //DELETE FROM _reference39 WHERE _idrref IN
             //(SELECT _idrref FROM _reference39 ORDER BY _code ASC, _idrref ASC LIMIT 10)
@@ -148,11 +151,11 @@ namespace DaJet.Agent.Producer
 
             StringBuilder script = new StringBuilder();
             script.AppendLine("WITH cte AS");
-            script.AppendLine($"(SELECT _code, _idrref FROM {tableName} ORDER BY _code ASC, _idrref ASC LIMIT {messageCount})");
+            script.AppendLine($"(SELECT {field1}, {field2} FROM {tableName} ORDER BY {field1} ASC, {field2} ASC LIMIT {messageCount})");
             script.AppendLine($"DELETE FROM {tableName} t USING cte");
-            script.AppendLine("WHERE t._code = cte._code AND t._idrref = cte._idrref");
+            script.AppendLine($"WHERE t.{field1} = cte.{field1} AND t.{field2} = cte.{field2}");
             script.AppendLine("RETURNING");
-            script.AppendLine("t._code AS \"Код\", t._idrref AS \"Ссылка\", t._version AS \"ВерсияДанных\",");
+            script.AppendLine($"t.{field1} AS \"МоментВремени\", t.{field2} AS \"Идентификатор\",");
             script.AppendLine($"t.{field1} AS \"ДатаВремя\", CAST(t.{field2} AS varchar) AS \"Отправитель\",");
             script.AppendLine($"CAST(t.{field3} AS varchar) AS \"Получатели\", CAST(t.{field4} AS varchar) AS \"ТипОперации\",");
             script.AppendLine($"CAST(t.{field5} AS varchar) AS \"ТипСообщения\", CAST(t.{field6} AS text) AS \"ТелоСообщения\";");
@@ -163,14 +166,14 @@ namespace DaJet.Agent.Producer
             DatabaseMessage message = new DatabaseMessage();
             message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
             message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid((byte[])reader[1]);
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
-            {
-                message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
-            }
-            else
-            {
-                message.Version = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
-            }
+            //if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            //{
+            //    message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
+            //}
+            //else
+            //{
+            //    message.Version = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
+            //}
             message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
             message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
             message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);

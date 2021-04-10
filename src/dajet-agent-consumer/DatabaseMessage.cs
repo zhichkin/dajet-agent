@@ -6,12 +6,12 @@ namespace DaJet.Agent.Consumer
     {
         public long Code { get; set; } = DateTime.UtcNow.Ticks / TimeSpan.TicksPerMillisecond;
         public Guid Uuid { get; set; } = Guid.NewGuid();
-        public bool DeletionMark { get; set; } = false;
-        public Guid PredefinedID { get; set; } = Guid.Empty;
         public DateTime DateTimeStamp { get; set; } = DateTime.Now.AddYears(2000);
-        public string Sender { get; set; }
-        public string OperationType { get; set; }
-        public string MessageType { get; set; }
-        public string MessageBody { get; set; }
+        public string Sender { get; set; } = string.Empty;
+        public string OperationType { get; set; } = string.Empty;
+        public string MessageType { get; set; } = string.Empty;
+        public string MessageBody { get; set; } = string.Empty;
+        public int ErrorCount { get; set; } = 0;
+        public string ErrorDescription { get; set; } = string.Empty;
     }
 }
