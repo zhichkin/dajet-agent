@@ -1,60 +1,48 @@
 ﻿{
-  "CriticalErrorDelay": 60,
+  "CriticalErrorDelay": 300,
   "DatabaseSettings": {
-    "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
+    "DatabaseProvider": 1,
+    "ConnectionString": "Host=localhost;Port=5432;Database=test_node_2;Username=postgres;Password=postgres",
     "MessagesPerTransaction": 1000,
-    "DatabaseQueryingPeriodicity": 30,
+    "DatabaseQueryingPeriodicity": 10,
     "UseNotifications": false,
     "NotificationQueueName": "dajet-agent-export-queue",
-    "WaitForNotificationTimeout": 60,
+    "WaitForNotificationTimeout": 180,
     "DatabaseQueue": {
-      "TableName": "_Reference157",
-      "ObjectName": "Справочник.ИсходящаяОчередьRabbitMQ",
+      "TableName": "_inforg162",
+      "ObjectName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_Fld158",
-          "Property": "ДатаВремя"
-        },
-        {
-          "Name": "_Fld159",
+          "Name": "_fld165",
           "Property": "Отправитель"
         },
         {
-          "Name": "_Fld160",
+          "Name": "_fld166",
           "Property": "Получатели"
         },
         {
-          "Name": "_Fld161",
-          "Property": "ТипОперации"
-        },
-        {
-          "Name": "_Fld162",
+          "Name": "_fld167",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_Fld163",
+          "Name": "_fld168",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_Code",
-          "Property": "Код"
+          "Name": "_fld163",
+          "Property": "МоментВремени"
         },
         {
-          "Name": "_IDRRef",
-          "Property": "Ссылка"
+          "Name": "_fld164",
+          "Property": "Идентификатор"
         },
         {
-          "Name": "_Marked",
-          "Property": "ПометкаУдаления"
+          "Name": "_fld169",
+          "Property": "ДатаВремя"
         },
         {
-          "Name": "_PredefinedID",
-          "Property": "Предопределённый"
-        },
-        {
-          "Name": "_Version",
-          "Property": "ВерсияДанных"
+          "Name": "_fld170",
+          "Property": "ТипОперации"
         }
       ]
     }

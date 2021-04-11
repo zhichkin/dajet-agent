@@ -156,9 +156,9 @@ namespace DaJet.Agent.Producer
             script.AppendLine($"WHERE t.{field1} = cte.{field1} AND t.{field2} = cte.{field2}");
             script.AppendLine("RETURNING");
             script.AppendLine($"t.{field1} AS \"МоментВремени\", t.{field2} AS \"Идентификатор\",");
-            script.AppendLine($"t.{field1} AS \"ДатаВремя\", CAST(t.{field2} AS varchar) AS \"Отправитель\",");
-            script.AppendLine($"CAST(t.{field3} AS varchar) AS \"Получатели\", CAST(t.{field4} AS varchar) AS \"ТипОперации\",");
-            script.AppendLine($"CAST(t.{field5} AS varchar) AS \"ТипСообщения\", CAST(t.{field6} AS text) AS \"ТелоСообщения\";");
+            script.AppendLine($"t.{field3} AS \"ДатаВремя\", CAST(t.{field4} AS varchar) AS \"Отправитель\",");
+            script.AppendLine($"CAST(t.{field5} AS varchar) AS \"Получатели\", CAST(t.{field6} AS varchar) AS \"ТипОперации\",");
+            script.AppendLine($"CAST(t.{field7} AS varchar) AS \"ТипСообщения\", CAST(t.{field8} AS text) AS \"ТелоСообщения\";");
             return script.ToString();
         }
         private DatabaseMessage CreateDatabaseMessage(DbDataReader reader)
@@ -166,20 +166,12 @@ namespace DaJet.Agent.Producer
             DatabaseMessage message = new DatabaseMessage();
             message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal(0);
             message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid((byte[])reader[1]);
-            //if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
-            //{
-            //    message.Version = reader.IsDBNull(2) ? 0 : BitConverter.ToInt64((byte[])reader[2]);
-            //}
-            //else
-            //{
-            //    message.Version = reader.IsDBNull(2) ? 0 : reader.GetInt32(2);
-            //}
-            message.DateTimeStamp = reader.IsDBNull(3) ? DateTime.MinValue : reader.GetDateTime(3);
-            message.Sender = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
-            message.Recipients = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
-            message.OperationType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
-            message.MessageType = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
-            message.MessageBody = reader.IsDBNull(8) ? string.Empty : reader.GetString(8);
+            message.DateTimeStamp = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime(2);
+            message.Sender = reader.IsDBNull(3) ? string.Empty : reader.GetString(3);
+            message.Recipients = reader.IsDBNull(4) ? string.Empty : reader.GetString(4);
+            message.OperationType = reader.IsDBNull(5) ? string.Empty : reader.GetString(5);
+            message.MessageType = reader.IsDBNull(6) ? string.Empty : reader.GetString(6);
+            message.MessageBody = reader.IsDBNull(7) ? string.Empty : reader.GetString(7);
             return message;
         }
 

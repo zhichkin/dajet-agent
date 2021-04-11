@@ -21,7 +21,7 @@ namespace DaJet.Agent.CLI
         #region "Constants"
 
         private const string EXCHANGE_NAMESPACE = "РИБ";
-        private const string METAOBJECT_BASE_NAME = "Справочник";
+        private const string METAOBJECT_BASE_NAME = "РегистрСведений";
         private const string CONSUMER_TABLE_QUEUE_NAME = "ВходящаяОчередьRabbitMQ";
         private const string PRODUCER_TABLE_QUEUE_NAME = "ИсходящаяОчередьRabbitMQ";
         private const string CONSUMER_SETTINGS_FILE_NAME = "consumer-settings.json";
@@ -141,7 +141,7 @@ namespace DaJet.Agent.CLI
         {
             MessageConsumerSettings settings = new MessageConsumerSettings();
 
-            MetadataObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
+            MetadataObject metaObject = infoBase.InformationRegisters.Values.Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
             if (metaObject == null) return settings;
 
             metadataService.EnrichFromDatabase(metaObject);
@@ -190,7 +190,7 @@ namespace DaJet.Agent.CLI
         {
             MessageProducerSettings settings = new MessageProducerSettings();
 
-            MetadataObject metaObject = infoBase.Catalogs.Values.Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
+            MetadataObject metaObject = infoBase.InformationRegisters.Values.Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
             if (metaObject == null) return settings;
 
             metadataService.EnrichFromDatabase(metaObject);

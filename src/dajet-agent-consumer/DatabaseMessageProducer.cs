@@ -173,7 +173,7 @@ namespace DaJet.Agent.Consumer
             string field5 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
             string field6 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
             string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
-            string field8 = queue.Fields.Where(f => f.Property == "КоличествоПопыток").FirstOrDefault()?.Name;
+            string field8 = queue.Fields.Where(f => f.Property == "КоличествоОшибок").FirstOrDefault()?.Name;
             string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
 
             StringBuilder script = new StringBuilder();

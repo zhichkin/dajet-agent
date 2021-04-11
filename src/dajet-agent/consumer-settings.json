@@ -1,51 +1,47 @@
 ﻿{
-  "CriticalErrorDelay": 60,
+  "CriticalErrorDelay": 300,
   "DatabaseSettings": {
-    "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=ZHICHKIN;Initial Catalog=my_exchange;Integrated Security=True",
+    "DatabaseProvider": 1,
+    "ConnectionString": "Host=localhost;Port=5432;Database=test_node_2;Username=postgres;Password=postgres",
     "DatabaseQueue": {
-      "TableName": "_Reference164",
-      "ObjectName": "Справочник.ВходящаяОчередьRabbitMQ",
+      "TableName": "_inforg152",
+      "ObjectName": "РегистрСведений.ВходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_Fld165",
-          "Property": "ДатаВремя"
-        },
-        {
-          "Name": "_Fld166",
+          "Name": "_fld155",
           "Property": "Отправитель"
         },
         {
-          "Name": "_Fld167",
+          "Name": "_fld156",
           "Property": "ТипОперации"
         },
         {
-          "Name": "_Fld168",
+          "Name": "_fld157",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_Fld169",
+          "Name": "_fld158",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_Code",
-          "Property": "Код"
+          "Name": "_fld153",
+          "Property": "МоментВремени"
         },
         {
-          "Name": "_IDRRef",
-          "Property": "Ссылка"
+          "Name": "_fld154",
+          "Property": "Идентификатор"
         },
         {
-          "Name": "_Marked",
-          "Property": "ПометкаУдаления"
+          "Name": "_fld159",
+          "Property": "ДатаВремя"
         },
         {
-          "Name": "_PredefinedID",
-          "Property": "Предопределённый"
+          "Name": "_fld160",
+          "Property": "ОписаниеОшибки"
         },
         {
-          "Name": "_Version",
-          "Property": "ВерсияДанных"
+          "Name": "_fld161",
+          "Property": "КоличествоОшибок"
         }
       ]
     }
@@ -57,8 +53,6 @@
     "Password": "guest",
     "ConsumerPrefetchCount": 1
   },
-  "ThisNode": "MAIN",
-  "SenderNodes": [
-    "N001", "N002"
-  ]
+  "ThisNode": "N002",
+  "SenderNodes": [ "MAIN" ]
 }
