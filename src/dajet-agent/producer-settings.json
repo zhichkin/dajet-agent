@@ -1,47 +1,47 @@
 ﻿{
   "CriticalErrorDelay": 300,
   "DatabaseSettings": {
-    "DatabaseProvider": 1,
-    "ConnectionString": "Host=localhost;Port=5432;Database=test_node_2;Username=postgres;Password=postgres",
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 10,
     "UseNotifications": false,
     "NotificationQueueName": "dajet-agent-export-queue",
     "WaitForNotificationTimeout": 180,
     "DatabaseQueue": {
-      "TableName": "_inforg162",
+      "TableName": "_InfoRg164",
       "ObjectName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_fld165",
+          "Name": "_Fld167",
           "Property": "Отправитель"
         },
         {
-          "Name": "_fld166",
+          "Name": "_Fld168",
           "Property": "Получатели"
         },
         {
-          "Name": "_fld167",
+          "Name": "_Fld169",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_fld168",
+          "Name": "_Fld170",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_fld163",
+          "Name": "_Fld165",
           "Property": "МоментВремени"
         },
         {
-          "Name": "_fld164",
+          "Name": "_Fld166",
           "Property": "Идентификатор"
         },
         {
-          "Name": "_fld169",
+          "Name": "_Fld171",
           "Property": "ДатаВремя"
         },
         {
-          "Name": "_fld170",
+          "Name": "_Fld172",
           "Property": "ТипОперации"
         }
       ]

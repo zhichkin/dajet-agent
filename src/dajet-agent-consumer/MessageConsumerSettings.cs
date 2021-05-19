@@ -5,6 +5,7 @@ namespace DaJet.Agent.Consumer
 {
     public sealed class MessageConsumerSettings
     {
+        public bool DebugMode { get; set; } = false;
         public int CriticalErrorDelay { get; set; } = 300; // seconds
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
@@ -27,5 +28,7 @@ namespace DaJet.Agent.Consumer
         /// The value defines the max number of unacknowledged deliveries that are permitted on a consumer.
         /// </summary>
         public ushort ConsumerPrefetchCount { get; set; } = 1;
+        public int ConsumeMode { get; set; } = 0; // 0 - eventing consumer (push api), 1 - basic get consumer (pull api)
+        public int ConsumeTimeOut { get; set; } = 20; // applies only for pull api
     }
 }

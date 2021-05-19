@@ -98,6 +98,10 @@ namespace DaJet.Agent.Consumer
                     DisposeDatabaseResources(connection, null, command);
                 }
             }
+            if (Settings.DebugMode)
+            {
+                throw new Exception("Failed to insert message to database. Records affected = " + recordsAffected.ToString());
+            }
             return (recordsAffected != 0);
         }
         private string SQLServer_InsertMessageScript()
@@ -159,6 +163,10 @@ namespace DaJet.Agent.Consumer
                 {
                     DisposeDatabaseResources(connection, null, command);
                 }
+            }
+            if (Settings.DebugMode)
+            {
+                throw new Exception("Failed to insert message to database. Records affected = " + recordsAffected.ToString());
             }
             return (recordsAffected != 0);
         }

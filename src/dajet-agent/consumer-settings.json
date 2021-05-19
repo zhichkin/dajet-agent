@@ -1,46 +1,47 @@
 ﻿{
+  "DebugMode": false,
   "CriticalErrorDelay": 300,
   "DatabaseSettings": {
-    "DatabaseProvider": 1,
-    "ConnectionString": "Host=localhost;Port=5432;Database=test_node_2;Username=postgres;Password=postgres",
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",
     "DatabaseQueue": {
-      "TableName": "_inforg152",
+      "TableName": "_InfoRg154",
       "ObjectName": "РегистрСведений.ВходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_fld155",
+          "Name": "_Fld157",
           "Property": "Отправитель"
         },
         {
-          "Name": "_fld156",
+          "Name": "_Fld158",
           "Property": "ТипОперации"
         },
         {
-          "Name": "_fld157",
+          "Name": "_Fld159",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_fld158",
+          "Name": "_Fld160",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_fld153",
+          "Name": "_Fld155",
           "Property": "МоментВремени"
         },
         {
-          "Name": "_fld154",
+          "Name": "_Fld156",
           "Property": "Идентификатор"
         },
         {
-          "Name": "_fld159",
+          "Name": "_Fld161",
           "Property": "ДатаВремя"
         },
         {
-          "Name": "_fld160",
+          "Name": "_Fld162",
           "Property": "ОписаниеОшибки"
         },
         {
-          "Name": "_fld161",
+          "Name": "_Fld163",
           "Property": "КоличествоОшибок"
         }
       ]
@@ -51,8 +52,10 @@
     "PortNumber": 5672,
     "UserName": "guest",
     "Password": "guest",
+    "ConsumeMode": 0,
+    "ConsumeTimeOut": 20,
     "ConsumerPrefetchCount": 1
   },
-  "ThisNode": "N002",
+  "ThisNode": "N001",
   "SenderNodes": [ "MAIN" ]
 }
