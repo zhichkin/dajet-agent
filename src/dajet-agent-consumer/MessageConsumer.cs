@@ -49,6 +49,14 @@ namespace DaJet.Agent.Consumer
                 AutomaticRecoveryEnabled = true,
                 NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
             };
+            if (Settings.MessageBrokerSettings.FrameMaxSize > 0)
+            {
+                factory.RequestedFrameMax = Settings.MessageBrokerSettings.FrameMaxSize;
+            }
+            if (Settings.MessageBrokerSettings.ConsumeTimeOut > 0)
+            {
+                factory.ContinuationTimeout = TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConsumeTimeOut);
+            }
             return factory.CreateConnection();
         }
         private void InitializeConnection()
@@ -422,8 +430,7 @@ namespace DaJet.Agent.Consumer
             if (!(exchangeName is string exchange)) return;
 
             IModel channel = Connection.CreateModel();
-            channel.ContinuationTimeout = TimeSpan.FromSeconds(Settings.MessageBrokerSettings.ConsumeTimeOut);
-
+            
             IDatabaseMessageProducer producer = Services.GetService<IDatabaseMessageProducer>();
 
             while (!_stoppingToken.IsCancellationRequested)

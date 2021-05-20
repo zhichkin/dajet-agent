@@ -29,6 +29,7 @@ namespace DaJet.Agent.Consumer
         /// </summary>
         public ushort ConsumerPrefetchCount { get; set; } = 1;
         public int ConsumeMode { get; set; } = 0; // 0 - eventing consumer (push api), 1 - basic get consumer (pull api)
-        public int ConsumeTimeOut { get; set; } = 20; // applies only for pull api
+        public uint FrameMaxSize { get; set; } = 0;
+        public int ConsumeTimeOut { get; set; } = 0; // applies only for pull api
     }
 }

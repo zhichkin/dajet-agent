@@ -53,7 +53,8 @@
     "UserName": "guest",
     "Password": "guest",
     "ConsumeMode": 0,
-    "ConsumeTimeOut": 20,
+    "FrameMaxSize": 4096,
+    "ConsumeTimeOut": 0,
     "ConsumerPrefetchCount": 1
   },
   "ThisNode": "N001",
