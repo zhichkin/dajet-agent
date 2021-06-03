@@ -83,20 +83,19 @@ namespace DaJet.Agent.Producer
         private void ConsumeMessages()
         {
             int sumReceived = 0;
-            int messagesReceived = 0;
-
+            int messagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
+            IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
+            
             FileLogger.Log(LOG_TOKEN, START_PROCESSING_OUTGOING_MESSAGES_MESSAGE);
 
-            IDatabaseMessageConsumer consumer = Services.GetService<IDatabaseMessageConsumer>();
-
-            int messagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
+            int messagesReceived = 0;
             do
             {
                 messagesReceived = consumer.ConsumeMessages(messagesPerTransaction);
                 sumReceived += messagesReceived;
             }
             while (messagesReceived > 0);
-            
+
             FileLogger.Log(LOG_TOKEN, string.Format(OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE, sumReceived));
         }
         private void AwaitNotification(int timeout)

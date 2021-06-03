@@ -41,8 +41,20 @@ namespace DaJet.Agent.Consumer
         }
         public DatabaseMessage ProduceMessage(JsonDataTransferMessage message)
         {
-            DatabaseMessage dbm = new DatabaseMessage();
-            dbm.Sender = message.Sender;
+            DatabaseMessage dbm = new DatabaseMessage()
+            {
+                Sender = message.Sender
+            };
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.PostgreSQL)
+            {
+                // SELECT ofset FROM _yearoffset - returns zero rows
+                dbm.DateTimeStamp = DateTime.Now;
+            }
+            else
+            {
+                // настройка ИБ 1С - смещение дат SELECT [Offset] FROM [_YearOffset]
+                dbm.DateTimeStamp = DateTime.Now.AddYears(2000);
+            }
             if (message.Objects.Count > 0)
             {
                 dbm.MessageType = message.Objects[0].Type;

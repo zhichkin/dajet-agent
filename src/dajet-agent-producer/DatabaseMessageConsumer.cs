@@ -13,6 +13,7 @@ namespace DaJet.Agent.Producer
 {
     public interface IDatabaseMessageConsumer
     {
+        int CountMessages();
         int ConsumeMessages(int count);
         void AwaitNotification(int timeout);
     }
@@ -25,7 +26,11 @@ namespace DaJet.Agent.Producer
             Settings = options.Value;
             MessageProducer = messageProducer;
         }
-        
+
+        public int CountMessages()
+        {
+            return CountDatabaseMessages();
+        }
         public int ConsumeMessages(int messageCount)
         {
             return ConsumeDatabaseMessages(messageCount);
@@ -84,6 +89,45 @@ namespace DaJet.Agent.Producer
             }
             return messagesRecevied;
         }
+
+        private int CountDatabaseMessages()
+        {
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.PostgreSQL)
+            {
+                throw new NotSupportedException("Counting database messages is not supported for PostgreSQL.");
+            }
+
+            int messagesCount = 0;
+            using (DbConnection connection = CreateDbConnection())
+            {
+                connection.Open();
+                using (DbCommand command = connection.CreateCommand())
+                {
+                    command.Connection = connection;
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = CountMessagesScript();
+                    command.CommandTimeout = 60; // seconds
+
+                    messagesCount = (int)command.ExecuteScalar();
+                }
+            }
+            return messagesCount;
+        }
+
+        private string CountMessagesScript()
+        {
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            {
+                return MS_CountMessagesScript();
+            }
+            return string.Empty; // is not implemented for PostgresSQL - it is not needed
+        }
+        private string MS_CountMessagesScript()
+        {
+            string tableName = Settings.DatabaseSettings.DatabaseQueue.TableName;
+            return $"SELECT COUNT(*) FROM [{tableName}];";
+        }
+
         private string ConsumeDatabaseMessagesScript(int messageCount)
         {
             if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
@@ -118,7 +162,7 @@ namespace DaJet.Agent.Producer
             script.AppendLine($"[{field7}] AS [ТипСообщения],");
             script.AppendLine($"[{field8}] AS [ТелоСообщения]");
             script.AppendLine("FROM");
-            script.AppendLine($"[{tableName}] WITH (ROWLOCK)");
+            script.AppendLine($"[{tableName}] WITH (ROWLOCK, READPAST)");
             script.AppendLine("ORDER BY");
             script.AppendLine($"[{field1}] ASC, [{field2}] ASC");
             script.AppendLine(")");
