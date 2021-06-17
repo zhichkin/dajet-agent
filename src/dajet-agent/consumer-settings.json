@@ -1,6 +1,6 @@
 ﻿{
   "DebugMode": false,
-  "CriticalErrorDelay": 300,
+  "CriticalErrorDelay": 60,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",

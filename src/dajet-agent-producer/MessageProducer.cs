@@ -2,6 +2,7 @@
 using DaJet.Utilities;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
 using System;
 using System.Collections.Concurrent;
@@ -83,28 +84,7 @@ namespace DaJet.Agent.Producer
                 InitializeBasicProperties();
             }
         }
-        public void Dispose()
-        {
-            if (Channel != null)
-            {
-                if (!Channel.IsClosed)
-                {
-                    Channel.Close();
-                }
-                Channel.Dispose();
-                Channel = null;
-            }
-
-            if (Connection != null)
-            {
-                if (Connection.IsOpen)
-                {
-                    Connection.Close();
-                }
-                Connection.Dispose();
-                Connection = null;
-            }
-        }
+        
         private string CreateExchangeName(string sender, string recipient)
         {
             return $"РИБ.{sender}.{recipient}";
@@ -179,6 +159,13 @@ namespace DaJet.Agent.Producer
             {
                 channel.ExchangeDeclarePassive(exchange);
             }
+            catch (TimeoutException timeoutError)
+            {
+                exists = false;
+                string errorMessage = "Check if exists \"" + exchange + "\". " + timeoutError.Message;
+                Exception exception = new Exception(errorMessage);
+                SendingExceptions.Enqueue(exception);
+            }
             catch (Exception error)
             {
                 exists = false;
@@ -193,6 +180,30 @@ namespace DaJet.Agent.Producer
             if (Connection != null) Connection.Dispose();
 
             Connection = CreateConnection();
+            Connection.ConnectionBlocked += HandleConnectionBlocked;
+            Connection.ConnectionUnblocked += HandleConnectionUnblocked;
+        }
+        private void HandleConnectionBlocked(object sender, ConnectionBlockedEventArgs args)
+        {
+            ConnectionIsBlocked = true;
+            FileLogger.Log(LOG_TOKEN, "Connection blocked: " + args.Reason);
+
+            if (SendingCancellation != null)
+            {
+                try
+                {
+                    SendingCancellation.Cancel();
+                }
+                catch
+                {
+                    // SendingCancellation can be already disposed ...
+                }
+            }
+        }
+        private void HandleConnectionUnblocked(object sender, EventArgs args)
+        {
+            ConnectionIsBlocked = false;
+            FileLogger.Log(LOG_TOKEN, "Connection unblocked.");
         }
         private void ConfigureChannels()
         {
@@ -221,25 +232,104 @@ namespace DaJet.Agent.Producer
                 }
             }
         }
-        
+
+        public void Dispose()
+        {
+            DisposeChannel();
+            DisposeChannels();
+            DisposeConnection();
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+        private void DisposeChannel()
+        {
+            if (Channel != null)
+            {
+                if (!Channel.IsClosed)
+                {
+                    Channel.Close();
+                }
+                Channel.Dispose();
+                Channel = null;
+            }
+        }
+        private void DisposeChannels()
+        {
+            if (Channels == null || Channels.Count == 0) return;
+
+            for (int i = 0; i < Channels.Count; i++)
+            {
+                if (Channels[i].Channel != null)
+                {
+                    if (!Channels[i].Channel.IsClosed)
+                    {
+                        Channels[i].Channel.Close();
+                        //Channels[i].Channel.Abort();
+                    }
+                    Channels[i].Channel.Dispose();
+                    Channels[i].Channel = null;
+                }
+            }
+            Channels.Clear();
+        }
+        private void DisposeConnection()
+        {
+            if (Connection != null)
+            {
+                if (Connection.IsOpen)
+                {
+                    Connection.Close();
+                    //Connection.Abort();
+                }
+                Connection.ConnectionBlocked -= HandleConnectionBlocked;
+                Connection.ConnectionUnblocked -= HandleConnectionUnblocked;
+                //Connection.Dispose(); // can be locked on infinite wait !
+                Connection = null;
+            }
+        }
+
+        private bool ConnectionIsBlocked = false;
         private CancellationTokenSource SendingCancellation;
         private ConcurrentQueue<Exception> SendingExceptions;
+        private Dictionary<string, Queue<DatabaseMessage>> ProducerQueues;
         private List<KeyValuePair<string, Queue<DatabaseMessage>>> ProducerQueuesList;
-        private Dictionary<string, Queue<DatabaseMessage>> ProducerQueues = new Dictionary<string, Queue<DatabaseMessage>>();
+        
         public void Publish(List<DatabaseMessage> messageBatch)
         {
             if (messageBatch == null || messageBatch.Count == 0) return;
 
+            if (ConnectionIsBlocked)
+            {
+                throw new OperationCanceledException("Connection was blocked: sending messages operation is canceled.");
+            }
+
             bool throwException = false;
 
             SendingExceptions = new ConcurrentQueue<Exception>();
-
+            
             ConfigureConnection();
             ConfigureChannels();
-            PrepareProducerQueues(messageBatch);
+
+            int messagesSent = 0;
+            int messagesToBeSent = 0;
+
             try
             {
-                ProcessProducerQueuesInParallel();
+                messagesToBeSent = PrepareProducerQueues(messageBatch);
+
+                if (messagesToBeSent > 0)
+                {
+                    messagesSent = ProcessProducerQueuesInParallel();
+                    
+                    if (messagesSent != messagesToBeSent)
+                    {
+                        throwException = true;
+                    }
+                }
+                else
+                {
+                    throwException = true;
+                }
             }
             catch (Exception error)
             {
@@ -254,8 +344,12 @@ namespace DaJet.Agent.Producer
                 throw new OperationCanceledException("Sending messages operation was canceled.");
             }
         }
-        private void PrepareProducerQueues(List<DatabaseMessage> messageBatch)
+        private int PrepareProducerQueues(List<DatabaseMessage> messageBatch)
         {
+            int messagesToSend = 0;
+
+            ProducerQueues = new Dictionary<string, Queue<DatabaseMessage>>();
+
             string[] recipients = null;
             string exchangeName = string.Empty;
             foreach (DatabaseMessage message in messageBatch)
@@ -278,9 +372,12 @@ namespace DaJet.Agent.Producer
                         ProducerQueues.Add(exchangeName, queue);
                     }
                     queue.Enqueue(message);
+                    messagesToSend++;
                 }
             }
             ProducerQueuesList = ProducerQueues.ToList();
+
+            return messagesToSend;
         }
         private void SerializeDatabaseMessage(DatabaseMessage message)
         {
@@ -288,20 +385,38 @@ namespace DaJet.Agent.Producer
             string json = JsonSerializer.Serialize(dtm);
             message.MessageBytes = Encoding.UTF8.GetBytes(json);
         }
-        private void ProcessProducerQueuesInParallel()
+        private int ProcessProducerQueuesInParallel()
         {
+            int messagesSent = 0;
+
             using (SendingCancellation = new CancellationTokenSource())
             {
-                ParallelOptions options = new ParallelOptions()
+                Task<int>[] tasks = new Task<int>[Channels.Count];
+
+                for (int channelId = 0; channelId < Channels.Count; channelId++)
                 {
-                    CancellationToken = SendingCancellation.Token,
-                    MaxDegreeOfParallelism = Environment.ProcessorCount
-                };
-                Parallel.For(0, Channels.Count, options, ProcessProducerQueuesInBackground);
+                    tasks[channelId] = Task.Factory.StartNew(
+                        ProcessProducerQueuesInBackground,
+                        channelId,
+                        SendingCancellation.Token,
+                        TaskCreationOptions.LongRunning,
+                        TaskScheduler.Default);
+                }
+
+                Task.WaitAll(tasks, SendingCancellation.Token);
+
+                foreach (Task<int> task in tasks)
+                {
+                    messagesSent += task.Result;
+                }
             }
+
+            return messagesSent;
         }
-        private void ProcessProducerQueuesInBackground(int channelId)
+        private int ProcessProducerQueuesInBackground(object id)
         {
+            int channelId = (int)id;
+
             SendingChannel sendingChannel = Channels[channelId];
 
             int messagesSent = 0;
@@ -319,7 +434,7 @@ namespace DaJet.Agent.Producer
 
                 while (item.Value.TryDequeue(out DatabaseMessage message))
                 {
-                    if (SendingCancellation.IsCancellationRequested) return;
+                    if (SendingCancellation.IsCancellationRequested) return 0;
 
                     try
                     {
@@ -330,7 +445,6 @@ namespace DaJet.Agent.Producer
                     {
                         SendingExceptions.Enqueue(error);
                         SendingCancellation.Cancel();
-                        return;
                     }
                 }
 
@@ -369,6 +483,8 @@ namespace DaJet.Agent.Producer
                 }
                 FileLogger.Log(LOG_TOKEN, $"{messagesSent} messages have been sent to destination queues: {destinationQueues}.");
             }
+
+            return messagesSent;
         }
         private void ProcessExceptions()
         {

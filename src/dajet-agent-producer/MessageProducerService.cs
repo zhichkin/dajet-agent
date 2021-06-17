@@ -14,6 +14,7 @@ namespace DaJet.Agent.Producer
         private const string LOG_TOKEN = "P-SVC";
         private const string START_PROCESSING_OUTGOING_MESSAGES_MESSAGE = "Start processing outgoing messages ...";
         private const string OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE = "{0} outgoing messages processed.";
+        private const string TOTAL_COUNT_MESSAGES_PROCESSED_MESSAGE_TEMPLATE = "Total of {0} outgoing messages processed.";
         private const string DATABASE_NOTIFICATIONS_ARE_NOT_ENABLED_MESSAGE = "Database notifications are not enabled.";
         private const string START_AWAITING_DATABASE_NOTIFICATION_MESSAGE = "Start awaiting database notification ...";
         private const string CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE = "Critical error delay of {0} seconds started.";
@@ -37,10 +38,18 @@ namespace DaJet.Agent.Producer
             FileLogger.Log(LOG_TOKEN, "Message producer service is stopped.");
             return base.StopAsync(cancellationToken);
         }
-        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        protected override Task ExecuteAsync(CancellationToken cancellationToken)
         {
             // Running the job in the background
-            _ = Task.Run(async () => { await DoWork(stoppingToken); }, stoppingToken);
+            _ = Task.Run(async () => { await DoWork(cancellationToken); }, cancellationToken);
+
+            //Task task = Task.Factory.StartNew(
+            //    DoWork,
+            //    cancellationToken,
+            //    cancellationToken,
+            //    TaskCreationOptions.LongRunning,
+            //    TaskScheduler.Default);
+
             // Return completed task to let other services to run
             return Task.CompletedTask;
         }
@@ -52,7 +61,7 @@ namespace DaJet.Agent.Producer
                 {
                     ConsumeMessages();
                 }
-                catch(Exception error)
+                catch (Exception error)
                 {
                     FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
                     FileLogger.Log(LOG_TOKEN, string.Format(CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
@@ -92,11 +101,14 @@ namespace DaJet.Agent.Producer
             do
             {
                 messagesReceived = consumer.ConsumeMessages(messagesPerTransaction);
+                
+                FileLogger.Log(LOG_TOKEN, string.Format(OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE, messagesReceived));
+
                 sumReceived += messagesReceived;
             }
             while (messagesReceived > 0);
 
-            FileLogger.Log(LOG_TOKEN, string.Format(OUTGOING_MESSAGES_PROCESSED_MESSAGE_TEMPLATE, sumReceived));
+            FileLogger.Log(LOG_TOKEN, string.Format(TOTAL_COUNT_MESSAGES_PROCESSED_MESSAGE_TEMPLATE, sumReceived));
         }
         private void AwaitNotification(int timeout)
         {
