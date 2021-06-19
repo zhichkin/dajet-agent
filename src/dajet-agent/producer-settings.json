@@ -1,5 +1,6 @@
 ﻿{
   "CriticalErrorDelay": 60,
+  "UseMessageHandlers": true,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",

@@ -1,4 +1,6 @@
-﻿using DaJet.Metadata;
+﻿using DaJet.Agent.MessageHandlers;
+using DaJet.Metadata;
+using DaJet.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -70,7 +72,15 @@ namespace DaJet.Agent.Producer
                             reader.Close();
                             messagesRecevied = reader.RecordsAffected;
                         }
-                        if (batch.Count > 0) MessageProducer.Publish(batch);
+
+                        if (batch.Count > 0)
+                        {
+                            if (Settings.UseMessageHandlers)
+                            {
+                                ProcessMessages(batch);
+                            }
+                            MessageProducer.Publish(batch);
+                        }
 
                         transaction.Commit();
                     }
@@ -271,6 +281,22 @@ namespace DaJet.Agent.Producer
             script.AppendLine("message_body        AS [message_body]");
             script.AppendLine($"FROM [{Settings.DatabaseSettings.NotificationQueueName}]), TIMEOUT {timeout};");
             return script.ToString();
+        }
+
+        private void ProcessMessages(List<DatabaseMessage> batch)
+        {
+            IMessageHandler messageHandler = new ШтрихкодыУпаковокЗаказовКлиентовMessageHandler();
+            foreach (DatabaseMessage message in batch)
+            {
+                try
+                {
+                    messageHandler.ProcessMessage(message.MessageType, message.MessageBody);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                }
+            }
         }
     }
 }

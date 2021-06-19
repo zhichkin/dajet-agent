@@ -7,6 +7,7 @@ namespace DaJet.Agent.Consumer
     {
         public bool DebugMode { get; set; } = false;
         public int CriticalErrorDelay { get; set; } = 300; // seconds
+        public bool UseMessageHandlers { get; set; } = false;
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
         public string ThisNode { get; set; } = string.Empty;
