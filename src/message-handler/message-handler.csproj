@@ -6,4 +6,8 @@
     <AssemblyName>DaJet.Agent.MessageHandlers</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -2,6 +2,6 @@
 {
     public interface IMessageHandler
     {
-        void ProcessMessage(string messageType, string messageBody);
+        void ProcessMessage(string direction, string messageType, string messageBody);
     }
 }

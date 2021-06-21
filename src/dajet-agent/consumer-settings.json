@@ -1,5 +1,6 @@
 ﻿{
   "DebugMode": false,
+  "UseMessageHandlers": false,
   "CriticalErrorDelay": 60,
   "DatabaseSettings": {
     "DatabaseProvider": 0,

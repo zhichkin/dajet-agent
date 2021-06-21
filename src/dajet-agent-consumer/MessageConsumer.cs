@@ -1,4 +1,5 @@
-﻿using DaJet.Metadata;
+﻿using DaJet.Agent.MessageHandlers;
+using DaJet.Metadata;
 using DaJet.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -354,6 +355,11 @@ namespace DaJet.Agent.Consumer
                 return;
             }
 
+            if (Settings.UseMessageHandlers)
+            {
+                ProcessMessages(dataTransferMessage);
+            }
+
             bool success = true;
             IDatabaseMessageProducer producer = Services.GetService<IDatabaseMessageProducer>();
             try
@@ -444,6 +450,11 @@ namespace DaJet.Agent.Consumer
                         AckMessage(channel, result); // ack anyway and continue receive messages
                         break;
                     }
+                    
+                    if (Settings.UseMessageHandlers)
+                    {
+                        ProcessMessages(dataTransferMessage);
+                    }
 
                     DatabaseMessage message = producer.ProduceMessage(dataTransferMessage);
 
@@ -516,5 +527,23 @@ namespace DaJet.Agent.Consumer
         }
 
         #endregion
+
+        private void ProcessMessages(JsonDataTransferMessage envelope)
+        {
+            if (envelope == null) return;
+
+            IMessageHandler messageHandler = new ШтрихкодыУпаковокЗаказовКлиентовMessageHandler();
+            foreach (JsonDataTransferObject message in envelope.Objects)
+            {
+                try
+                {
+                    messageHandler.ProcessMessage("input", message.Type, message.Body);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
+                }
+            }
+        }
     }
 }

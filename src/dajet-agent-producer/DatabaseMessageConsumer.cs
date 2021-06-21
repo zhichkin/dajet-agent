@@ -290,7 +290,7 @@ namespace DaJet.Agent.Producer
             {
                 try
                 {
-                    messageHandler.ProcessMessage(message.MessageType, message.MessageBody);
+                    messageHandler.ProcessMessage("output", message.MessageType, message.MessageBody);
                 }
                 catch (Exception error)
                 {
