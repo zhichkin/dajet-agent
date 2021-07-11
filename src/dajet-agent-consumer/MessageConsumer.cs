@@ -355,10 +355,10 @@ namespace DaJet.Agent.Consumer
                 return;
             }
 
-            if (Settings.UseMessageHandlers)
-            {
-                ProcessMessages(dataTransferMessage);
-            }
+            //if (Settings.UseMessageHandlers)
+            //{
+            //    ProcessMessages(dataTransferMessage);
+            //}
 
             bool success = true;
             IDatabaseMessageProducer producer = Services.GetService<IDatabaseMessageProducer>();
@@ -451,10 +451,10 @@ namespace DaJet.Agent.Consumer
                         break;
                     }
                     
-                    if (Settings.UseMessageHandlers)
-                    {
-                        ProcessMessages(dataTransferMessage);
-                    }
+                    //if (Settings.UseMessageHandlers)
+                    //{
+                    //    ProcessMessages(dataTransferMessage);
+                    //}
 
                     DatabaseMessage message = producer.ProduceMessage(dataTransferMessage);
 
