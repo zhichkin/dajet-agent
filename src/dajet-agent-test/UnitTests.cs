@@ -1,4 +1,7 @@
 using DaJet.Agent.Producer;
+using DaJet.Agent.Service;
+using DaJet.Agent.Service.Model;
+using DaJet.Agent.Service.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Npgsql;
@@ -15,10 +18,20 @@ namespace DaJet.Agent.Test
     [TestClass]
     public class UnitTests
     {
+        private IOptions<AppSettings> AppSettings { get; set; }
         private IOptions<MessageProducerSettings> Settings { get; set; }
         public UnitTests()
         {
+            InitializeAppSettings();
             InitializeTestSettings();
+        }
+        private void InitializeAppSettings()
+        {
+            AppSettings settings = new AppSettings()
+            {
+                AppCatalog = "C:\\temp\\"
+            };
+            AppSettings = Options.Create(settings);
         }
         private void InitializeTestSettings()
         {
@@ -64,6 +77,58 @@ namespace DaJet.Agent.Test
 
                 connection.Open();
                 int recordsAffected = command.ExecuteNonQuery();
+            }
+        }
+
+        [TestMethod] public void SelectNodes()
+        {
+            IPubSubService service = new PubSubService(AppSettings);
+            List<Node> list = service.SelectNodes();
+            if (list.Count == 0)
+            {
+                Console.WriteLine("List of nodes is empty.");
+                return;
+            }
+            foreach (Node node in list)
+            {
+                Console.WriteLine(string.Format("{0}. {1} ({2})", node.Id, node.Code, node.Description));
+            }
+        }
+        [TestMethod] public void CreateNode()
+        {
+            IPubSubService service = new PubSubService(AppSettings);
+
+            for (int i = 0; i < 5; i++)
+            {
+                Node node = new Node()
+                {
+                    Code = "Node" + i.ToString(),
+                    Description = "Test node " + i.ToString()
+                };
+                service.CreateNode(node);
+            }
+        }
+        [TestMethod] public void UpdateNode()
+        {
+            IPubSubService service = new PubSubService(AppSettings);
+
+            List<Node> list = service.SelectNodes();
+
+            foreach (Node node in list)
+            {
+                node.Description = "Node " + node.Id.ToString() + " update test";
+                service.UpdateNode(node);
+            }
+        }
+        [TestMethod] public void DeleteNode()
+        {
+            IPubSubService service = new PubSubService(AppSettings);
+
+            Node node = new Node();
+            for (int i = 0; i < 5; i++)
+            {
+                node.Id = i + 1;
+                service.DeleteNode(node);
             }
         }
     }
