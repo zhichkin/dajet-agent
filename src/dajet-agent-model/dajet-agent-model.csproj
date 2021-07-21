@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>DaJet.Agent.Model</RootNamespace>
+    <AssemblyName>DaJet.Agent.Model</AssemblyName>
+  </PropertyGroup>
+
+</Project>

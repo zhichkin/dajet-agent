@@ -1,4 +1,4 @@
-﻿using DaJet.Agent.Service.Model;
+﻿using DaJet.Agent.Model;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Options;
 using System.Collections.Generic;
@@ -203,6 +203,7 @@ namespace DaJet.Agent.Service.Services
                     command.Parameters.AddWithValue("code", node.Code);
                     command.Parameters.AddWithValue("description", node.Description);
                     int affected = command.ExecuteNonQuery();
+                    // TODO: if (affected == 0) raise error ?
                 }
             }
         }

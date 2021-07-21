@@ -1,0 +1,49 @@
+﻿@page "/node"
+@page "/node/{id:int}"
+@inject INodeViewModel Model
+@inject IJSRuntime JsRuntime
+
+<p><NavLink class="btn btn-primary" href="nodelist">Список узлов обмена</NavLink></p>
+
+@if (!Model.IsInitialized)
+{
+    <p>Данные загружаются ...</p>
+}
+else
+{
+    <table class="table-borderless">
+        <tr>
+            <td><b>Id:</b></td>
+            <td style="padding-left: 10px">@Model.GetTitle()</td>
+        </tr>
+        <tr>
+            <td style="padding-top: 5px"><b>Code:</b></td>
+            <td style="padding-top: 5px; padding-left: 10px"><input @bind="Model.Code" /></td>
+        </tr>
+        <tr>
+            <td style="padding-top: 5px"><b>Description:</b></td>
+            <td style="padding-top: 5px; padding-left: 10px"><input @bind="Model.Description" /></td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding-top:10px;text-align:right">
+                <button class="btn btn-primary" @onclick="OnSaveChanges_Click">Сохранить</button>
+                <NavLink class="btn btn-warning" href="nodelist">Отмена</NavLink>
+            </td>
+        </tr>
+    </table>
+}
+
+@code
+{
+    [Parameter] public int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Model.InitializeViewModel(Id);
+    }
+    private async Task OnSaveChanges_Click()
+    {
+        await Model.SaveChanges();
+        await JsRuntime.InvokeVoidAsync("alert", "OK");
+    }
+}

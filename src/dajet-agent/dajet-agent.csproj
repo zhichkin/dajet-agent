@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="3.2.1" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.1" />
@@ -15,7 +16,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
+    <ProjectReference Include="..\dajet-agent-model\dajet-agent-model.csproj" />
     <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
+    <ProjectReference Include="..\dajet-blazor\dajet-blazor.csproj" />
     <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
   </ItemGroup>
 

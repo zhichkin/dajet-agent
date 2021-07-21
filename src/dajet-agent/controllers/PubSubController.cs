@@ -1,4 +1,4 @@
-﻿using DaJet.Agent.Service.Model;
+﻿using DaJet.Agent.Model;
 using DaJet.Agent.Service.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
@@ -42,7 +42,7 @@ namespace DaJet.Agent.Service.Controllers
         {
             PubSubService.CreateNode(node);
             string json = JsonSerializer.Serialize(node);
-            HttpContext.Response.StatusCode = 201;
+            HttpContext.Response.StatusCode = 201; // HttpStatusCode.Created;
             _ = HttpContext.Response.Headers.TryAdd("Location", "dajet/nodes/" + node.Id.ToString());
             return Content(json, APPLICATION_JSON, Encoding.UTF8);
         }

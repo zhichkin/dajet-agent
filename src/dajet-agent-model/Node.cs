@@ -1,4 +1,4 @@
-﻿namespace DaJet.Agent.Service.Model
+﻿namespace DaJet.Agent.Model
 {
     public sealed class Node
     {

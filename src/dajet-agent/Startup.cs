@@ -13,10 +13,21 @@ namespace DaJet.Agent.Service
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.UseWebAssemblyDebugging();
+            }
+            else
+            {
+                //app.UseExceptionHandler("/Error");
+                //app.UseHsts();
             }
             app.UseHttpsRedirection();
+
+            app.UseBlazorFrameworkFiles();
+            app.UseDefaultFiles(); // index.html
+            app.UseStaticFiles();
+
             app.UseRouting();
-            app.UseAuthorization();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
