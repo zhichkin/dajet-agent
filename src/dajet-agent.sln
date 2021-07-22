@@ -23,7 +23,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "test-json-serializer", "tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-blazor", "dajet-blazor\dajet-blazor.csproj", "{A68B62C4-3029-49E0-B421-2B95F05C5603}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dajet-agent-model", "dajet-agent-model\dajet-agent-model.csproj", "{3A5A1B15-40B3-4DD3-A3C9-A21110569922}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-model", "dajet-agent-model\dajet-agent-model.csproj", "{3A5A1B15-40B3-4DD3-A3C9-A21110569922}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

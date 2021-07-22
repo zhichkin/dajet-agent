@@ -15,6 +15,7 @@ namespace DaJet.Agent.Blazor
         string Code { get; set; }
         string Description { get; set; }
         string GetTitle();
+        string GetPublicationsLink();
         Task SaveChanges();
     }
     public sealed class NodeViewModel : INodeViewModel
@@ -45,6 +46,10 @@ namespace DaJet.Agent.Blazor
         public string GetTitle()
         {
             return (Id > 0) ? Id.ToString() : "*";
+        }
+        public string GetPublicationsLink()
+        {
+            return "publications" + ((Id > 0) ? $"/{Id}" : string.Empty);
         }
         public async Task SaveChanges()
         {

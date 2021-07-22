@@ -19,6 +19,7 @@ namespace DaJet.Agent.Service.Controllers
         {
             PubSubService = service;
         }
+
         [HttpGet("nodes")] public ActionResult SelectNodes()
         {
             List<Node> list = PubSubService.SelectNodes();
@@ -54,6 +55,50 @@ namespace DaJet.Agent.Service.Controllers
         [HttpDelete("nodes/{id}")] public ActionResult DeleteNode([FromRoute] int id)
         {
             PubSubService.DeleteNode(new Node() { Id = id });
+            return Ok();
+        }
+
+        [HttpGet("publications")] public ActionResult SelectPublications()
+        {
+            List<Publication> list = PubSubService.SelectPublications();
+            string json = JsonSerializer.Serialize(list);
+            return Content(json, APPLICATION_JSON, Encoding.UTF8);
+        }
+        [HttpGet("publications/{id}")] public ActionResult SelectPublication([FromRoute] int id)
+        {
+            Publication publication = PubSubService.SelectPublication(id);
+            if (publication == null)
+            {
+                return NotFound();
+            }
+            else
+            {
+                string json = JsonSerializer.Serialize(publication);
+                return Content(json, APPLICATION_JSON, Encoding.UTF8);
+            }
+        }
+        [HttpGet("publications/publisher/{id}")] public ActionResult SelectPublications([FromRoute] int id)
+        {
+            List<Publication> list = PubSubService.SelectPublications(id);
+            string json = JsonSerializer.Serialize(list);
+            return Content(json, APPLICATION_JSON, Encoding.UTF8);
+        }
+        [HttpPost("publications")] public ActionResult CreatePublication([FromBody] Publication publication)
+        {
+            PubSubService.CreatePublication(publication);
+            string json = JsonSerializer.Serialize(publication);
+            HttpContext.Response.StatusCode = 201; // HttpStatusCode.Created;
+            _ = HttpContext.Response.Headers.TryAdd("Location", "dajet/publications/" + publication.Id.ToString());
+            return Content(json, APPLICATION_JSON, Encoding.UTF8);
+        }
+        [HttpPut("publications")] public ActionResult UpdatePublication([FromBody] Publication publication)
+        {
+            PubSubService.UpdatePublication(publication);
+            return Ok();
+        }
+        [HttpDelete("publications/{id}")] public ActionResult DeletePublication([FromRoute] int id)
+        {
+            PubSubService.DeletePublication(new Publication() { Id = id });
             return Ok();
         }
     }

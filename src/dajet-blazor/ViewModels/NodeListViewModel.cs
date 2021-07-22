@@ -19,11 +19,9 @@ namespace DaJet.Agent.Blazor
     public sealed class NodeListViewModel : INodeListViewModel
     {
         private HttpClient Http { get; }
-        private NavigationManager NavigationManager { get; }
-        public NodeListViewModel(HttpClient http, NavigationManager navigator)
+        public NodeListViewModel(HttpClient http)
         {
             Http = http;
-            NavigationManager = navigator;
         }
         public async Task InitializeViewModel()
         {

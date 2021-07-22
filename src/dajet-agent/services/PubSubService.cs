@@ -14,6 +14,13 @@ namespace DaJet.Agent.Service.Services
         void CreateNode(Node node);
         void UpdateNode(Node node);
         void DeleteNode(Node node);
+
+        List<Publication> SelectPublications();
+        List<Publication> SelectPublications(int publisher);
+        Publication SelectPublication(int id);
+        void CreatePublication(Publication publication);
+        void UpdatePublication(Publication publication);
+        void DeletePublication(Publication publication);
     }
     public sealed class PubSubService : IPubSubService
     {
@@ -66,6 +73,9 @@ namespace DaJet.Agent.Service.Services
                 using (SqliteCommand command = connection.CreateCommand())
                 {
                     command.CommandText = CreateTableScript_Nodes();
+                    command.ExecuteNonQuery();
+
+                    command.CommandText = CreateTableScript_Publications();
                     command.ExecuteNonQuery();
                 }
             }
@@ -216,6 +226,194 @@ namespace DaJet.Agent.Service.Services
                 {
                     command.CommandText = DeleteNodeScript();
                     command.Parameters.AddWithValue("id", node.Id);
+                    int affected = command.ExecuteNonQuery();
+                }
+            }
+        }
+        #endregion
+
+        #region "Publications"
+        private string CreateTableScript_Publications()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("CREATE TABLE IF NOT EXISTS publications");
+            script.AppendLine("(");
+            script.AppendLine("id INTEGER PRIMARY KEY,");
+            script.AppendLine("name TEXT NOT NULL,");
+            script.AppendLine("publisher INTEGER NOT NULL");
+            script.AppendLine(");");
+            script.AppendLine("CREATE UNIQUE INDEX ix_publisher_name");
+            script.Append("ON publications (publisher, name);");
+            return script.ToString();
+        }
+
+        private string SelectPublicationsScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("SELECT id, name, publisher FROM publications;");
+            return script.ToString();
+        }
+        private string SelectPublisherPublicationsScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("SELECT id, name, publisher FROM publications WHERE publisher = @publisher;");
+            return script.ToString();
+        }
+        private string SelectPublicationScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("SELECT id, name, publisher FROM publications WHERE id = @id;");
+            return script.ToString();
+        }
+        private string CreatePublicationScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("INSERT INTO publications (name, publisher) VALUES (@name, @publisher);");
+            script.AppendLine("SELECT LAST_INSERT_ROWID();");
+            return script.ToString();
+        }
+        private string UpdatePublicationScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("UPDATE publications SET name = @name, publisher = @publisher WHERE id = @id;");
+            return script.ToString();
+        }
+        private string DeletePublicationScript()
+        {
+            StringBuilder script = new StringBuilder();
+            script.AppendLine("DELETE FROM publications WHERE id = @id;");
+            return script.ToString();
+        }
+
+        public List<Publication> SelectPublications()
+        {
+            List<Publication> list = new List<Publication>();
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = SelectPublicationsScript();
+                    using (SqliteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new Publication()
+                            {
+                                Id = reader.GetInt32(0),
+                                Name = reader.GetString(1),
+                                Publisher = reader.GetInt32(2)
+                            });
+                        }
+                        reader.Close();
+                    }
+                }
+            }
+            return list;
+        }
+        public List<Publication> SelectPublications(int publisher)
+        {
+            List<Publication> list = new List<Publication>();
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = SelectPublisherPublicationsScript();
+                    command.Parameters.AddWithValue("publisher", publisher);
+
+                    using (SqliteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            list.Add(new Publication()
+                            {
+                                Id = reader.GetInt32(0),
+                                Name = reader.GetString(1),
+                                Publisher = reader.GetInt32(2)
+                            });
+                        }
+                        reader.Close();
+                    }
+                }
+            }
+            return list;
+        }
+        public Publication SelectPublication(int id)
+        {
+            Publication publication = null;
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = SelectPublicationScript();
+                    command.Parameters.AddWithValue("id", id);
+
+                    using (SqliteDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            publication = new Publication()
+                            {
+                                Id = reader.GetInt32(0),
+                                Name = reader.GetString(1),
+                                Publisher = reader.GetInt32(2)
+                            };
+                        }
+                        reader.Close();
+                    }
+                }
+            }
+            return publication;
+        }
+        public void CreatePublication(Publication publication)
+        {
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = CreatePublicationScript();
+                    command.Parameters.AddWithValue("name", publication.Name);
+                    command.Parameters.AddWithValue("publisher", publication.Publisher);
+
+                    using (SqliteDataReader reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            publication.Id = reader.GetInt32(0);
+                        }
+                        reader.Close();
+                    }
+                }
+            }
+        }
+        public void UpdatePublication(Publication publication)
+        {
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = UpdatePublicationScript();
+                    command.Parameters.AddWithValue("id", publication.Id);
+                    command.Parameters.AddWithValue("name", publication.Name);
+                    command.Parameters.AddWithValue("publisher", publication.Publisher);
+                    int affected = command.ExecuteNonQuery();
+                    // TODO: if (affected == 0) raise error ?
+                }
+            }
+        }
+        public void DeletePublication(Publication publication)
+        {
+            using (SqliteConnection connection = new SqliteConnection(ConnectionString))
+            {
+                connection.Open();
+                using (SqliteCommand command = connection.CreateCommand())
+                {
+                    command.CommandText = DeletePublicationScript();
+                    command.Parameters.AddWithValue("id", publication.Id);
                     int affected = command.ExecuteNonQuery();
                 }
             }

@@ -15,9 +15,12 @@ namespace DaJet.Agent.Blazor
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-            // adding view models
+            #region "View models"
             builder.Services.AddTransient<INodeViewModel, NodeViewModel>();
             builder.Services.AddScoped<INodeListViewModel, NodeListViewModel>();
+            builder.Services.AddTransient<IPublicationViewModel, PublicationViewModel>();
+            builder.Services.AddTransient<IPublicationListViewModel, PublicationListViewModel>();
+            #endregion
 
             await builder.Build().RunAsync();
         }
