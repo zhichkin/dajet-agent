@@ -69,7 +69,8 @@ namespace DaJet.Agent.Service
 
             if (AppSettings.UseProducer)
             {
-                services.AddSingleton<IMessageProducer, MessageProducer>();
+                //services.AddSingleton<IMessageProducer, MessageProducer>();
+                services.AddSingleton<IMessageProducer, TopicMessageProducer>();
                 services.AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>();
                 services.AddHostedService<MessageProducerService>();
             }

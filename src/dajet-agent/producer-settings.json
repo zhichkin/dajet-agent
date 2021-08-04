@@ -3,46 +3,46 @@
   "UseMessageHandlers": false,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet_agent;Integrated Security=True",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 10,
     "UseNotifications": false,
     "NotificationQueueName": "dajet-agent-export-queue",
     "WaitForNotificationTimeout": 180,
     "DatabaseQueue": {
-      "TableName": "_InfoRg164",
+      "TableName": "_InfoRg68",
       "ObjectName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_Fld167",
+          "Name": "_Fld71",
           "Property": "Отправитель"
         },
         {
-          "Name": "_Fld168",
+          "Name": "_Fld72",
           "Property": "Получатели"
         },
         {
-          "Name": "_Fld169",
+          "Name": "_Fld73",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_Fld170",
+          "Name": "_Fld74",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_Fld165",
+          "Name": "_Fld69",
           "Property": "МоментВремени"
         },
         {
-          "Name": "_Fld166",
+          "Name": "_Fld70",
           "Property": "Идентификатор"
         },
         {
-          "Name": "_Fld171",
+          "Name": "_Fld75",
           "Property": "ДатаВремя"
         },
         {
-          "Name": "_Fld172",
+          "Name": "_Fld76",
           "Property": "ТипОперации"
         }
       ]
@@ -53,6 +53,8 @@
     "PortNumber": 5672,
     "UserName": "guest",
     "Password": "guest",
-    "ConfirmationTimeout": 1
+    "ConfirmationTimeout": 1,
+    "TopicExchange": "DISPATCHER-TEST",
+    "ExchangeRole": 1
   }
 }

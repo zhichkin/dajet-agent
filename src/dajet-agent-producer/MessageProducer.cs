@@ -17,7 +17,7 @@ namespace DaJet.Agent.Producer
 {
     public interface IMessageProducer : IDisposable
     {
-        void CreateQueue(string name);
+        //void CreateQueue(string name);
         void Publish(List<DatabaseMessage> messageBatch);
     }
     public sealed class MessageProducer: IMessageProducer

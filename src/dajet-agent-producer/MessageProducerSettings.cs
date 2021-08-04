@@ -23,9 +23,13 @@ namespace DaJet.Agent.Producer
     public sealed class MessageBrokerSettings
     {
         public string HostName { get; set; } = "localhost";
+        public string VirtualHost { get; set; } = "/";
         public int PortNumber { get; set; } = 5672;
         public string UserName { get; set; } = "guest";
         public string Password { get; set; } = "guest";
         public int ConfirmationTimeout { get; set; } = 1; // seconds
+        public string TopicExchange { get; set; } = string.Empty; // topic (durable)
+        public int ExchangeRole { get; set; } = 0; // 0 - aggregator (Sender); 1 - dispatcher (Recipients)
+        public int CopyType { get; set; } = 0; // 0 - CarbonCopy; 1 - BlindCarbonCopy
     }
 }

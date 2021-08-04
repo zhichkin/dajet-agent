@@ -1,17 +1,13 @@
+using DaJet.Agent.Model;
 using DaJet.Agent.Producer;
 using DaJet.Agent.Service;
-using DaJet.Agent.Service.Model;
 using DaJet.Agent.Service.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Npgsql;
-using RabbitMQ.Client;
-using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace DaJet.Agent.Test
 {
@@ -50,16 +46,16 @@ namespace DaJet.Agent.Test
 
         [TestMethod] public void CreateExchangeAndQueue()
         {
-            string prefix = "–»¡";
-            string mainNode = "MAIN";
-            string[] rayNodes = new string[] { "N001", "N002" };
-            IMessageProducer producer = new MessageProducer(Settings);
+            //string prefix = "–»¡";
+            //string mainNode = "MAIN";
+            //string[] rayNodes = new string[] { "N001", "N002" };
+            //IMessageProducer producer = new MessageProducer(Settings);
 
-            for (int i = 0; i < rayNodes.Length; i++)
-            {
-                producer.CreateQueue($"{prefix}.{mainNode}.{rayNodes[i]}");
-                producer.CreateQueue($"{prefix}.{rayNodes[i]}.{mainNode}");
-            }
+            //for (int i = 0; i < rayNodes.Length; i++)
+            //{
+            //    producer.CreateQueue($"{prefix}.{mainNode}.{rayNodes[i]}");
+            //    producer.CreateQueue($"{prefix}.{rayNodes[i]}.{mainNode}");
+            //}
         }
 
         [TestMethod] public void UpdatePostgreSQL()
