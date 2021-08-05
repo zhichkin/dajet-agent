@@ -337,18 +337,7 @@ namespace DaJet.Agent.Consumer
                 return;
             }
 
-            JsonDataTransferMessage dataTransferMessage = null;
-            try
-            {
-                byte[] body = args.Body.ToArray();
-                string messageBody = Encoding.UTF8.GetString(body);
-                dataTransferMessage = JsonSerializer.Deserialize<JsonDataTransferMessage>(messageBody);
-            }
-            catch (Exception error)
-            {
-                FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
-            }
-
+            JsonDataTransferMessage dataTransferMessage = GetJsonDataTransferMessage(args);
             if (dataTransferMessage == null)
             {
                 RemovePoisonMessage(exchange, consumer, args.DeliveryTag);
@@ -386,6 +375,70 @@ namespace DaJet.Agent.Consumer
                 ResetConsumer(args.ConsumerTag); // return unacked messages back to queue in the same order (!)
                 FileLogger.Log(LOG_TOKEN, "Failed to process message. Consumer (tag = " + args.ConsumerTag.ToString() + ") for exchange \"" + exchange + "\" has been reset.");
             }
+        }
+
+        private JsonDataTransferMessage GetJsonDataTransferMessage(BasicDeliverEventArgs args)
+        {
+            byte[] body = args.Body.ToArray();
+            string messageBody = Encoding.UTF8.GetString(body);
+
+            JsonDataTransferMessage dataTransferMessage = null;
+
+            if (string.IsNullOrWhiteSpace(args.BasicProperties.Type))
+            {
+                try
+                {
+                    dataTransferMessage = JsonSerializer.Deserialize<JsonDataTransferMessage>(messageBody);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+                }
+            }
+            else
+            {
+                dataTransferMessage = new JsonDataTransferMessage()
+                {
+                    Sender = (args.BasicProperties.AppId == null ? string.Empty : args.BasicProperties.AppId)
+                };
+                dataTransferMessage.Objects.Add(new JsonDataTransferObject()
+                {
+                    Type = (args.BasicProperties.Type == null ? string.Empty : args.BasicProperties.Type),
+                    Body = messageBody,
+                    Operation = string.Empty
+                });
+
+                if (args.BasicProperties.Headers != null)
+                {
+                    if (args.BasicProperties.Headers.TryGetValue("OperationType", out object value))
+                    {
+                        if (value is byte[] operationType)
+                        {
+                            dataTransferMessage.Objects[0].Operation = Encoding.UTF8.GetString(operationType);
+                        }
+                    }
+                }
+
+                //if (args.BasicProperties.Headers != null)
+                //{
+                //    var header = args.BasicProperties.Headers.Where(hdr => hdr.Key == "CC").FirstOrDefault();
+                //    if (header.Value is List<object> copies)
+                //    {
+                //        message.AppendLine($"CC routing keys:");
+                //        for (int i = 0; i < copies.Count; i++)
+                //        {
+                //            if (!(copies[i] is byte[] copy))
+                //            {
+                //                continue;
+                //            }
+                //            string routingKey = Encoding.UTF8.GetString(copy);
+                //            message.AppendLine($"{i}. {routingKey}");
+                //        }
+                //    }
+                //}
+            }
+
+            return dataTransferMessage;
         }
 
         #endregion

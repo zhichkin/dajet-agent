@@ -377,6 +377,7 @@ namespace DaJet.Agent.Producer
 
         private void ConfigureMessageProperties(DatabaseMessage message, IBasicProperties properties)
         {
+            properties.AppId = message.Sender;
             properties.Type = message.MessageType;
             properties.MessageId = message.Uuid.ToString();
             

@@ -1,6 +1,5 @@
 ﻿{
-  "CriticalErrorDelay": 60,
-  "UseMessageHandlers": false,
+  "CriticalErrorDelay": 300,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet_agent;Integrated Security=True",

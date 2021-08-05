@@ -75,10 +75,10 @@ namespace DaJet.Agent.Producer
 
                         if (batch.Count > 0)
                         {
-                            if (Settings.UseMessageHandlers)
-                            {
-                                ProcessMessages(batch);
-                            }
+                            //if (Settings.UseMessageHandlers)
+                            //{
+                            //    ProcessMessages(batch);
+                            //}
                             MessageProducer.Publish(batch);
                         }
 

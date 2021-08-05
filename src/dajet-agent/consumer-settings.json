@@ -1,48 +1,46 @@
 ﻿{
-  "DebugMode": false,
-  "UseMessageHandlers": false,
-  "CriticalErrorDelay": 60,
+  "CriticalErrorDelay": 300,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=test_node_1;Integrated Security=True",
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet_agent;Integrated Security=True",
     "DatabaseQueue": {
-      "TableName": "_InfoRg154",
+      "TableName": "_InfoRg58",
       "ObjectName": "РегистрСведений.ВходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_Fld157",
+          "Name": "_Fld61",
           "Property": "Отправитель"
         },
         {
-          "Name": "_Fld158",
+          "Name": "_Fld62",
           "Property": "ТипОперации"
         },
         {
-          "Name": "_Fld159",
+          "Name": "_Fld63",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_Fld160",
+          "Name": "_Fld64",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_Fld155",
+          "Name": "_Fld59",
           "Property": "МоментВремени"
         },
         {
-          "Name": "_Fld156",
+          "Name": "_Fld60",
           "Property": "Идентификатор"
         },
         {
-          "Name": "_Fld161",
+          "Name": "_Fld65",
           "Property": "ДатаВремя"
         },
         {
-          "Name": "_Fld162",
+          "Name": "_Fld66",
           "Property": "ОписаниеОшибки"
         },
         {
-          "Name": "_Fld163",
+          "Name": "_Fld67",
           "Property": "КоличествоОшибок"
         }
       ]
@@ -53,11 +51,8 @@
     "PortNumber": 5672,
     "UserName": "guest",
     "Password": "guest",
-    "ConsumeMode": 0,
-    "FrameMaxSize": 4096,
-    "ConsumeTimeOut": 0,
     "ConsumerPrefetchCount": 1
   },
-  "ThisNode": "N001",
-  "SenderNodes": [ "MAIN" ]
+  "ThisNode": "MAIN",
+  "SenderNodes": [ "N001", "N002" ]
 }
