@@ -25,6 +25,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-blazor", "dajet-blazo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-model", "dajet-agent-model\dajet-agent-model.csproj", "{3A5A1B15-40B3-4DD3-A3C9-A21110569922}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RabbitMQ.Management.Http", "RabbitMQ.Management.Http\RabbitMQ.Management.Http.csproj", "{6FC3253F-A735-49D7-B3F9-4EDA33D4F98E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -75,6 +77,10 @@ Global
 		{3A5A1B15-40B3-4DD3-A3C9-A21110569922}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A5A1B15-40B3-4DD3-A3C9-A21110569922}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A5A1B15-40B3-4DD3-A3C9-A21110569922}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6FC3253F-A735-49D7-B3F9-4EDA33D4F98E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6FC3253F-A735-49D7-B3F9-4EDA33D4F98E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6FC3253F-A735-49D7-B3F9-4EDA33D4F98E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6FC3253F-A735-49D7-B3F9-4EDA33D4F98E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

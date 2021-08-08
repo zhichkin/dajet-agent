@@ -5,9 +5,15 @@ using DaJet.Agent.Service.Services;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Npgsql;
+using RabbitMQ.Management.Http;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace DaJet.Agent.Test
 {
@@ -125,6 +131,135 @@ namespace DaJet.Agent.Test
             {
                 node.Id = i + 1;
                 service.DeleteNode(node);
+            }
+        }
+        
+        [TestMethod] public async Task GetHostInfo()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+
+            string exchangeName = "–»¡.MAIN.N001";
+            ExchangeInfo exchange = await manager.GetExchange(exchangeName);
+            if (exchange == null)
+            {
+                Console.WriteLine($"Exchange \"{exchangeName}\" is not found.");
+            }
+            else
+            {
+                Console.WriteLine($"Exchange \"{exchangeName}\" is {(exchange.Durable ? "durable" : "transient")}");
+            }
+
+            //List<ExchangeInfo> list = await manager.GetExchanges();
+
+            //List<ExchangeInfo> exchanges = list.Where(e => e.Name.StartsWith("–»¡")).ToList();
+            //if (exchanges == null || exchanges.Count == 0)
+            //{
+            //    Console.WriteLine("Exchanges are not found.");
+            //}
+            //else
+            //{
+            //    foreach (ExchangeInfo exchange in exchanges)
+            //    {
+            //        Console.WriteLine($"Exchange of type {exchange.Type} \"{exchange.Name}\" ({(exchange.Durable ? "durable" : "transient")})");
+            //    }
+            //}
+        }
+        [TestMethod] public async Task CreateExchange()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+            await manager.CreateExchange("test.exchange");
+        }
+        [TestMethod] public async Task DeleteExchange()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+            await manager.DeleteExchange("–»¡.N001.N002");
+        }
+
+        [TestMethod] public async Task GetQueues()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+
+            List<QueueInfo> list = await manager.GetQueues();
+
+            List<QueueInfo> queues = list.Where(e => e.Name.StartsWith("–»¡")).ToList();
+            if (queues == null || queues.Count == 0)
+            {
+                Console.WriteLine("Queues are not found.");
+            }
+            else
+            {
+                foreach (QueueInfo queue in queues)
+                {
+                    Console.WriteLine($"Queue \"{queue.Name}\" ({(queue.Durable ? "durable" : "transient")})");
+                    
+                    List<BindingInfo> bindings = await manager.GetBindings(queue.Name);
+                    foreach (BindingInfo binding in bindings)
+                    {
+                        Console.WriteLine($" - [{binding.Source}] -> [{binding.Destination}] ({binding.RoutingKey}) {binding.PropertiesKey}");
+                    }
+                }
+            }
+        }
+        private async Task<ExchangeInfo> GetExchange(string name)
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+            List<ExchangeInfo> list = await manager.GetExchanges();
+            ExchangeInfo exchange = list.Where(e => e.Name == name).FirstOrDefault();
+            return exchange;
+        }
+        private async Task<QueueInfo> GetQueue(string name)
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+            List<QueueInfo> list = await manager.GetQueues();
+            QueueInfo queue = list.Where(e => e.Name == name).FirstOrDefault();
+            return queue;
+        }
+        [TestMethod] public async Task CreateBinding()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+
+            ExchangeInfo exchange = await GetExchange("DISPATCHER-TEST");
+            if (exchange == null)
+            {
+                Console.WriteLine($"Exchange \"{exchange.Name}\" not found.");
+                return;
+            }
+
+            QueueInfo queue = await GetQueue("–»¡.MAIN.N001");
+            if (queue == null)
+            {
+                Console.WriteLine($"Queue \"{queue.Name}\" not found.");
+                return;
+            }
+
+            await manager.CreateBinding(exchange, queue, "N123");
+
+            Console.WriteLine($"Binding from {exchange.Name} to {queue.Name} created successfully.");
+        }
+        [TestMethod] public async Task DeleteBinding()
+        {
+            IRabbitHttpManager manager = new RabbitHttpManager();
+
+            ExchangeInfo exchange = await GetExchange("DISPATCHER-TEST");
+            if (exchange == null)
+            {
+                Console.WriteLine($"Exchange \"{exchange.Name}\" not found.");
+                return;
+            }
+
+            QueueInfo queue = await GetQueue("–»¡.MAIN.N001");
+            if (queue == null)
+            {
+                Console.WriteLine($"Queue \"{queue.Name}\" not found.");
+                return;
+            }
+
+            List<BindingInfo> bindings = await manager.GetBindings(queue.Name);
+            bindings = bindings.Where(b => b.Source == exchange.Name).ToList();
+            foreach (BindingInfo binding in bindings)
+            {
+                await manager.DeleteBinding(binding);
+                Console.WriteLine($"Binding ({binding.RoutingKey}) from {exchange.Name} to {queue.Name} deleted successfully.");
             }
         }
     }

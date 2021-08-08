@@ -20,6 +20,7 @@
     <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
     <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
     <ProjectReference Include="..\dajet-agent\dajet-agent.csproj" />
+    <ProjectReference Include="..\RabbitMQ.Management.Http\RabbitMQ.Management.Http.csproj" />
   </ItemGroup>
 
 </Project>
