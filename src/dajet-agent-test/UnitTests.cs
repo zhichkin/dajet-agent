@@ -10,9 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DaJet.Agent.Test
@@ -192,7 +189,7 @@ namespace DaJet.Agent.Test
                 {
                     Console.WriteLine($"Queue \"{queue.Name}\" ({(queue.Durable ? "durable" : "transient")})");
                     
-                    List<BindingInfo> bindings = await manager.GetBindings(queue.Name);
+                    List<BindingInfo> bindings = await manager.GetBindings(queue);
                     foreach (BindingInfo binding in bindings)
                     {
                         Console.WriteLine($" - [{binding.Source}] -> [{binding.Destination}] ({binding.RoutingKey}) {binding.PropertiesKey}");
@@ -200,35 +197,68 @@ namespace DaJet.Agent.Test
                 }
             }
         }
-        private async Task<ExchangeInfo> GetExchange(string name)
+        [TestMethod] public async Task GetQueueByName()
         {
             IRabbitHttpManager manager = new RabbitHttpManager();
-            List<ExchangeInfo> list = await manager.GetExchanges();
-            ExchangeInfo exchange = list.Where(e => e.Name == name).FirstOrDefault();
-            return exchange;
+
+            string queueName = "–»¡.MAIN.N001";
+            QueueInfo queue = await manager.GetQueue(queueName);
+            if (queue == null)
+            {
+                Console.WriteLine($"Queue \"{queueName}\" is not found.");
+            }
+            else
+            {
+                Console.WriteLine($"Queue \"{queueName}\" is {(queue.Durable ? "durable" : "transient")}");
+            }
         }
-        private async Task<QueueInfo> GetQueue(string name)
+        [TestMethod] public async Task CreateQueue()
         {
+            string queueName = "TEST-CREATE-QUEUE";
             IRabbitHttpManager manager = new RabbitHttpManager();
-            List<QueueInfo> list = await manager.GetQueues();
-            QueueInfo queue = list.Where(e => e.Name == name).FirstOrDefault();
-            return queue;
+            try
+            {
+                await manager.CreateQueue(queueName);
+                Console.WriteLine($"Queue {queueName} created successfully.");
+            }
+            catch (Exception error)
+            {
+                throw error;
+            }
         }
+        [TestMethod] public async Task DeleteQueue()
+        {
+            string queueName = "TEST-CREATE-QUEUE";
+            IRabbitHttpManager manager = new RabbitHttpManager();
+            try
+            {
+                await manager.DeleteQueue(queueName);
+                Console.WriteLine($"Queue {queueName} deleted successfully.");
+            }
+            catch (Exception error)
+            {
+                throw error;
+            }
+        }
+
         [TestMethod] public async Task CreateBinding()
         {
             IRabbitHttpManager manager = new RabbitHttpManager();
 
-            ExchangeInfo exchange = await GetExchange("DISPATCHER-TEST");
+            string queueName = "–»¡.MAIN.N001";
+            string exchangeName = "DISPATCHER-TEST";
+
+            ExchangeInfo exchange = await manager.GetExchange(exchangeName);
             if (exchange == null)
             {
-                Console.WriteLine($"Exchange \"{exchange.Name}\" not found.");
+                Console.WriteLine($"Exchange \"{exchangeName}\" not found.");
                 return;
             }
 
-            QueueInfo queue = await GetQueue("–»¡.MAIN.N001");
+            QueueInfo queue = await manager.GetQueue(queueName);
             if (queue == null)
             {
-                Console.WriteLine($"Queue \"{queue.Name}\" not found.");
+                Console.WriteLine($"Queue \"{queueName}\" not found.");
                 return;
             }
 
@@ -240,21 +270,24 @@ namespace DaJet.Agent.Test
         {
             IRabbitHttpManager manager = new RabbitHttpManager();
 
-            ExchangeInfo exchange = await GetExchange("DISPATCHER-TEST");
+            string queueName = "–»¡.MAIN.N001";
+            string exchangeName = "DISPATCHER-TEST";
+
+            ExchangeInfo exchange = await manager.GetExchange(exchangeName);
             if (exchange == null)
             {
-                Console.WriteLine($"Exchange \"{exchange.Name}\" not found.");
+                Console.WriteLine($"Exchange \"{exchangeName}\" not found.");
                 return;
             }
 
-            QueueInfo queue = await GetQueue("–»¡.MAIN.N001");
+            QueueInfo queue = await manager.GetQueue(queueName);
             if (queue == null)
             {
-                Console.WriteLine($"Queue \"{queue.Name}\" not found.");
+                Console.WriteLine($"Queue \"{queueName}\" not found.");
                 return;
             }
 
-            List<BindingInfo> bindings = await manager.GetBindings(queue.Name);
+            List<BindingInfo> bindings = await manager.GetBindings(queue);
             bindings = bindings.Where(b => b.Source == exchange.Name).ToList();
             foreach (BindingInfo binding in bindings)
             {

@@ -37,9 +37,11 @@ namespace RabbitMQ.Management.Http
         Task<ExchangeInfo> GetExchange(string name);
 
         Task<List<QueueInfo>> GetQueues();
-        // TODO: CreateQueue, DeleteQueue, GetQueue(string name)
+        Task<QueueInfo> GetQueue(string name);
+        Task CreateQueue(string name);
+        Task DeleteQueue(string name);
 
-        Task<List<BindingInfo>> GetBindings(string queueName);
+        Task<List<BindingInfo>> GetBindings(QueueInfo queue);
         Task CreateBinding(ExchangeInfo exchange, QueueInfo queue, string routingKey);
         Task DeleteBinding(BindingInfo binding);
     }
@@ -149,10 +151,44 @@ namespace RabbitMQ.Management.Http
             List<QueueInfo> list = await JsonSerializer.DeserializeAsync<List<QueueInfo>>(stream);
             return list;
         }
-
-        public async Task<List<BindingInfo>> GetBindings(string queueName)
+        public async Task<QueueInfo> GetQueue(string name)
         {
-            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}/{queueName}/bindings";
+            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}?page=1&page_size=1&name={name}";
+            HttpResponseMessage response = await HttpClient.GetAsync(url);
+            Stream stream = await response.Content.ReadAsStreamAsync();
+            QueueResponse queues = await JsonSerializer.DeserializeAsync<QueueResponse>(stream);
+            return (queues == null || queues.Items == null || queues.Items.Count == 0)
+                ? null
+                : queues.Items[0];
+        }
+        public async Task CreateQueue(string name)
+        {
+            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}/{name}";
+            QueueRequest queue = new QueueRequest()
+            {
+                Durable = true
+            };
+            HttpResponseMessage response = await HttpClient.PutAsJsonAsync(url, queue);
+            if (response.StatusCode != HttpStatusCode.Created)
+            {
+                throw new Exception(response.ReasonPhrase); // No Content
+            }
+        }
+        public async Task DeleteQueue(string name)
+        {
+            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}/{name}";
+            HttpResponseMessage response = await HttpClient.DeleteAsync(url);
+            if (response.StatusCode != HttpStatusCode.NoContent)
+            {
+                throw new Exception(response.ReasonPhrase); // Not Found
+            }
+            // When DELETEing a queue you can add the query string parameters if-empty=true and / or if-unused=true.
+            // These prevent the delete from succeeding if the queue contains messages, or has consumers, respectively.
+        }
+
+        public async Task<List<BindingInfo>> GetBindings(QueueInfo queue)
+        {
+            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}/{queue.Name}/bindings";
             HttpResponseMessage response = await HttpClient.GetAsync(url);
             Stream stream = await response.Content.ReadAsStreamAsync();
             List<BindingInfo> list = await JsonSerializer.DeserializeAsync<List<BindingInfo>>(stream);
