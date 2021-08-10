@@ -5,6 +5,20 @@
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
+    <Version>4.0.0</Version>
+    <Authors>Zhichkin</Authors>
+    <Description>1C:Enterprise 8 database RabbitMQ adapter.
+Both Microsoft SQL Server and PostgreSQL are supported.</Description>
+    <Copyright>Zhichkin © 2021</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
+    <PackageReleaseNotes>RabbitMQ adapter to 1C:Enterprise 8 databases.
+Both Microsoft SQL Server and PostgreSQL are supported.
+Message publishing is produced to configured topic exchange.
+Exchanges are assumed to be used as either "aggregator" or "distributor".
+Aggregator is meant to be a topology where many producers publish messages to one exchange.
+Distributor is meant to be a topology where many consumers subscribe to one exchange.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

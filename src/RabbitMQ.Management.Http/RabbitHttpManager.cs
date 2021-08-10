@@ -37,6 +37,7 @@ namespace RabbitMQ.Management.Http
         Task<ExchangeInfo> GetExchange(string name);
 
         Task<List<QueueInfo>> GetQueues();
+        Task<QueueResponse> GetQueues(int page, int size, string regex);
         Task<QueueInfo> GetQueue(string name);
         Task CreateQueue(string name);
         Task DeleteQueue(string name);
@@ -151,6 +152,18 @@ namespace RabbitMQ.Management.Http
             List<QueueInfo> list = await JsonSerializer.DeserializeAsync<List<QueueInfo>>(stream);
             return list;
         }
+        public async Task<QueueResponse> GetQueues(int page, int size, string regex)
+        {
+            if (size == 0 || size > 100)
+            {
+                size = 100;
+            }
+            string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}?page={page}&page_size={size}&name={HttpUtility.UrlEncode(regex)}&use_regex=true";
+            HttpResponseMessage response = await HttpClient.GetAsync(url);
+            Stream stream = await response.Content.ReadAsStreamAsync();
+            QueueResponse result = await JsonSerializer.DeserializeAsync<QueueResponse>(stream);
+            return result;
+        }
         public async Task<QueueInfo> GetQueue(string name)
         {
             string url = $"/api/queues/{HttpUtility.UrlEncode(VirtualHost)}?page=1&page_size=1&name={name}";
@@ -199,7 +212,7 @@ namespace RabbitMQ.Management.Http
             string url = $"/api/bindings/{HttpUtility.UrlEncode(VirtualHost)}/e/{exchange.Name}/q/{queue.Name}";
             BindingRequest binding = new BindingRequest()
             {
-                RoutingKey = routingKey
+                RoutingKey = (routingKey == null ? string.Empty : routingKey)
             };
             HttpResponseMessage response = await HttpClient.PostAsJsonAsync(url, binding);
             if (response.StatusCode != HttpStatusCode.Created)

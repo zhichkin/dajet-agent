@@ -48,7 +48,7 @@ namespace DaJet.Agent.Service.Services
         {
             get
             {
-                return Path.Combine(Settings.AppCatalog, DatabaseCatalog, CONST_DATABASE_FILENAME);
+                return Path.Combine(DatabaseCatalog, CONST_DATABASE_FILENAME);
             }
         }
         private string ConnectionString

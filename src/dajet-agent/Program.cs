@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using System.IO;
 using System.Reflection;
 
@@ -13,18 +14,18 @@ namespace DaJet.Agent.Service
 {
     public static class Program
     {
-        private static IHost _host;
         private const string LOG_TOKEN = "HOST";
-        private static AppSettings AppSettings { get; set; }
-        private static IConfigurationRoot Config { get; set; }
+        private static AppSettings AppSettings { get; set; } = new AppSettings();
         public static void Main()
         {
-            FileLogger.Log(LOG_TOKEN, "Hosting service is started.");
-
             InitializeAppSettings();
 
-            _host = CreateHostBuilder().Build();
-            _host.Run();
+            FileLogger.LogSize = AppSettings.LogSize;
+            FileLogger.UseCatalog(AppSettings.AppCatalog);
+
+            FileLogger.Log(LOG_TOKEN, "Hosting service is started.");
+
+            CreateHostBuilder().Build().Run();
             
             FileLogger.Log(LOG_TOKEN, "Hosting service is stopped.");
         }
@@ -33,84 +34,85 @@ namespace DaJet.Agent.Service
             Assembly asm = Assembly.GetExecutingAssembly();
             string catalogPath = Path.GetDirectoryName(asm.Location);
 
-            AppSettings = new AppSettings()
-            {
-                AppCatalog = catalogPath
-            };
-
-            Config = new ConfigurationBuilder()
-                .SetBasePath(AppSettings.AppCatalog)
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .SetBasePath(catalogPath)
                 .AddJsonFile("appsettings.json", optional: false)
                 .Build();
 
-            Config.Bind(AppSettings);
+            config.Bind(AppSettings);
+
+            AppSettings.AppCatalog = catalogPath;
         }
         private static IHostBuilder CreateHostBuilder()
         {
             IHostBuilder builder = Host.CreateDefaultBuilder()
                 .UseWindowsService()
+                .ConfigureAppConfiguration(config =>
+                {
+                    config.Sources.Clear();
+                    config
+                        .SetBasePath(AppSettings.AppCatalog)
+                        .AddJsonFile("appsettings.json", optional: false);
+                })
                 .ConfigureServices(ConfigureServices);
 
             if (AppSettings.UseWebServer)
             {
-                builder.ConfigureWebHostDefaults(web =>
+                builder.ConfigureWebHostDefaults(webHost =>
                 {
-                    web
-                    .UseKestrel()
-                    .UseStartup<Startup>();
+                    webHost
+                        .UseKestrel()
+                        .UseStartup<Startup>();
                 });
             }
             
             return builder;
         }
-        private static void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         {
-            ConfigureAppSettings(services);
+            services
+                .AddOptions()
+                .AddSingleton(Options.Create(AppSettings))
+                .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
+
+            if (AppSettings.UseWebServer)
+            {
+                services.AddSingleton<IPubSubService, PubSubService>();
+            }
 
             if (AppSettings.UseProducer)
             {
-                //services.AddSingleton<IMessageProducer, MessageProducer>();
-                services.AddSingleton<IMessageProducer, TopicMessageProducer>();
-                services.AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>();
-                services.AddHostedService<MessageProducerService>();
+                ConfigureProducerSettings(services);
+                services
+                    .AddSingleton<IMessageProducer, MessageProducer>()
+                    //.AddSingleton<IMessageProducer, TopicMessageProducer>() // version 4.1
+                    .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
+                    .AddHostedService<MessageProducerService>();
             }
+
             if (AppSettings.UseConsumer)
             {
-                services.AddSingleton<IMessageConsumer, MessageConsumer>();
-                services.AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>();
-                services.AddHostedService<MessageConsumerService>();
+                ConfigureConsumerSettings(services);
+                services
+                    .AddSingleton<IMessageConsumer, MessageConsumer>()
+                    .AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>()
+                    .AddHostedService<MessageConsumerService>();
             }
-            services.AddSingleton<IPubSubService, PubSubService>();
         }
-        private static void ConfigureAppSettings(IServiceCollection services)
+        private static void ConfigureProducerSettings(IServiceCollection services)
         {
-            services.AddOptions();
-            services.Configure<AppSettings>(Config);
-            services.Configure<HostOptions>(Config.GetSection("HostOptions"));
-
-            FileLogger.LogSize = AppSettings.LogSize;
-            
-            ConfigureProducerSettings(services, AppSettings.AppCatalog);
-            ConfigureConsumerSettings(services, AppSettings.AppCatalog);
-        }
-        private static void ConfigureProducerSettings(IServiceCollection services, string catalogPath)
-        {
-            MessageProducerSettings settings = new MessageProducerSettings();
             IConfigurationRoot config = new ConfigurationBuilder()
-                .SetBasePath(catalogPath)
+                .SetBasePath(AppSettings.AppCatalog)
                 .AddJsonFile("producer-settings.json", optional: false)
                 .Build();
-            config.Bind(settings);
             services.Configure<MessageProducerSettings>(config);
         }
-        private static void ConfigureConsumerSettings(IServiceCollection services, string catalogPath)
+        private static void ConfigureConsumerSettings(IServiceCollection services)
         {
-            MessageConsumerSettings settings = new MessageConsumerSettings();
-            IConfigurationRoot config = new ConfigurationBuilder()
-                .SetBasePath(catalogPath)
+           IConfigurationRoot config = new ConfigurationBuilder()
+                .SetBasePath(AppSettings.AppCatalog)
                 .AddJsonFile("consumer-settings.json", optional: false)
                 .Build();
-            config.Bind(settings);
             services.Configure<MessageConsumerSettings>(config);
         }
     }

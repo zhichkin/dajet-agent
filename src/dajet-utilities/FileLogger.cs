@@ -8,6 +8,7 @@ namespace DaJet.Utilities
 {
     public static class FileLogger
     {
+        private const string LOG_FILE_NAME = "dajet-agent.log";
         private static string _filePath;
         private static object _syncLog = new object();
         private static string GetFilePath()
@@ -19,11 +20,15 @@ namespace DaJet.Utilities
 
             Assembly assembly = Assembly.GetExecutingAssembly();
             string catalogPath = Path.GetDirectoryName(assembly.Location);
-            _filePath = Path.Combine(catalogPath, "dajet-agent.log");
+            _filePath = Path.Combine(catalogPath, LOG_FILE_NAME);
 
             return _filePath;
         }
         public static int LogSize { get; set; }
+        public static void UseCatalog(string catalogPath)
+        {
+            _filePath = Path.Combine(catalogPath, LOG_FILE_NAME);
+        }
         public static void Log(string token, string text)
         {
             Log(string.Format("[{0}] {1}", token, text));

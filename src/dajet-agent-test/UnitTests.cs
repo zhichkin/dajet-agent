@@ -164,12 +164,12 @@ namespace DaJet.Agent.Test
         [TestMethod] public async Task CreateExchange()
         {
             IRabbitHttpManager manager = new RabbitHttpManager();
-            await manager.CreateExchange("test.exchange");
+            await manager.CreateExchange("DISPATCHER-TEST");
         }
         [TestMethod] public async Task DeleteExchange()
         {
             IRabbitHttpManager manager = new RabbitHttpManager();
-            await manager.DeleteExchange("–»¡.N001.N002");
+            await manager.DeleteExchange("DISPATCHER-TEST");
         }
 
         [TestMethod] public async Task GetQueues()
@@ -247,6 +247,7 @@ namespace DaJet.Agent.Test
 
             string queueName = "–»¡.MAIN.N001";
             string exchangeName = "DISPATCHER-TEST";
+            string routingKey = "N001";
 
             ExchangeInfo exchange = await manager.GetExchange(exchangeName);
             if (exchange == null)
@@ -262,7 +263,7 @@ namespace DaJet.Agent.Test
                 return;
             }
 
-            await manager.CreateBinding(exchange, queue, "N123");
+            await manager.CreateBinding(exchange, queue, routingKey);
 
             Console.WriteLine($"Binding from {exchange.Name} to {queue.Name} created successfully.");
         }
