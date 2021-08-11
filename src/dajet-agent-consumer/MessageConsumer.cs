@@ -121,7 +121,10 @@ namespace DaJet.Agent.Consumer
         {
             if (Settings.MessageBrokerSettings.ConsumeMode != 0) throw new InvalidOperationException("Eventing is not allowed in pull consumer mode!");
 
-            if (Settings.DebugMode) FileLogger.Log(LOG_TOKEN, "Initializing connection to RabbitMQ ...");
+            if (Settings.DebugMode)
+            {
+                FileLogger.Log(LOG_TOKEN, $"Initializing connection to RabbitMQ ({Settings.MessageBrokerSettings.HostName}:{Settings.MessageBrokerSettings.PortNumber}) ...");
+            }
             
             InitializeConnection();
 
