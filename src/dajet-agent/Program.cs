@@ -84,8 +84,8 @@ namespace DaJet.Agent.Service
             {
                 ConfigureProducerSettings(services);
                 services
-                    .AddSingleton<IMessageProducer, MessageProducer>()
-                    //.AddSingleton<IMessageProducer, TopicMessageProducer>() // version 4.1
+                    //.AddSingleton<IMessageProducer, MessageProducer>() // version 4.0
+                    .AddSingleton<IMessageProducer, TopicMessageProducer>() // version 4.1
                     .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
                     .AddHostedService<MessageProducerService>();
             }
