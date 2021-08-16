@@ -65,10 +65,17 @@ namespace DaJet.Agent.Consumer
         }
         public bool InsertMessage(DatabaseMessage message)
         {
-            // TODO: use try-catch statement and handle exceptions thrown from using statements in this method !?
             if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
             {
-                return SQLServer_InsertMessage(message);
+                try
+                {
+                    return SQLServer_InsertMessage(message);
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
+                    return false;
+                }
             }
             return PostgreSQL_InsertMessage(message);
         }
@@ -78,9 +85,9 @@ namespace DaJet.Agent.Consumer
         public bool SQLServer_InsertMessage(DatabaseMessage message)
         {
             int recordsAffected = 0;
+            using(SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString))
+            using (SqlCommand command = connection.CreateCommand())
             {
-                SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString);
-                SqlCommand command = connection.CreateCommand();
                 command.CommandType = CommandType.Text;
                 command.CommandText = SQLServer_InsertMessageScript();
                 command.CommandTimeout = 60; // seconds
@@ -95,24 +102,10 @@ namespace DaJet.Agent.Consumer
                 command.Parameters.AddWithValue("p8", message.ErrorCount);
                 command.Parameters.AddWithValue("p9", message.ErrorDescription);
 
-                try
-                {
-                    connection.Open();
-                    recordsAffected = command.ExecuteNonQuery();
-                }
-                catch (Exception error)
-                {
-                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
-                }
-                finally
-                {
-                    // TODO: replace with using statement and handle exceptions outside the method !?
-                    DisposeDatabaseResources(connection, null, command);
-                }
-            }
-            if (Settings.DebugMode)
-            {
-                throw new Exception("Failed to insert message to database. Records affected = " + recordsAffected.ToString());
+                connection.Open();
+                recordsAffected = command.ExecuteNonQuery();
+
+                command.Parameters.Clear(); // clear memory referenced by parameters !
             }
             return (recordsAffected != 0);
         }
@@ -129,6 +122,8 @@ namespace DaJet.Agent.Consumer
             string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
             string field8 = queue.Fields.Where(f => f.Property == "КоличествоОшибок").FirstOrDefault()?.Name;
             string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
+
+            // TODO: cash SQL script !
 
             StringBuilder script = new StringBuilder();
             script.AppendLine($"INSERT [{tableName}]");

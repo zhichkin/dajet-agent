@@ -383,6 +383,7 @@ namespace DaJet.Agent.Consumer
         private JsonDataTransferMessage GetJsonDataTransferMessage(BasicDeliverEventArgs args)
         {
             byte[] body = args.Body.ToArray();
+            // TODO: // Encoding.UTF8.GetString(args.Body.Span); !
             string messageBody = Encoding.UTF8.GetString(body);
 
             JsonDataTransferMessage dataTransferMessage = null;
