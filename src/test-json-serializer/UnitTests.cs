@@ -1,15 +1,20 @@
 using DaJet.Agent.MessageHandlers;
+using Microsoft.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Buffers;
+using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Unicode;
 
 namespace test_json_serializer
 {
-    [TestClass]
-    public class UnitTests
+    [TestClass] public class UnitTests
     {
-        [TestMethod]
-        public void TestMethod1()
+        [TestMethod] public void TestMethod1()
         {
             string filePath = @"C:\Users\User\Desktop\GitHub\dajet-agent\src\json1.json";
             string json = File.ReadAllText(filePath);
@@ -47,6 +52,77 @@ namespace test_json_serializer
             using (StreamWriter writer = File.CreateText(filePath))
             {
                 writer.Write(logMessage);
+            }
+        }
+
+        [TestMethod] public void TestArrayPool()
+        {
+            List<string> values = new List<string>() { "ABCD", "A", "AB", "ABC" };
+
+            JsonWriterOptions options = new JsonWriterOptions()
+            {
+                Indented = false,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(100);
+
+            using (MemoryStream stream = new MemoryStream(buffer))
+            {
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream, options))
+                {
+                    foreach (string value in values)
+                    {
+                        SerializeToJson(writer, value);
+                        
+                        ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(buffer, 0, (int)writer.BytesCommitted);
+                        
+                        Console.WriteLine(Encoding.UTF8.GetString(span) + " = " + writer.BytesCommitted.ToString() + " bytes");
+
+                        writer.Reset();
+                        stream.Position = 0;
+                    }
+                }
+            }
+
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+        private void SerializeToJson(Utf8JsonWriter writer, string value)
+        {
+            writer.WriteStartObject();
+            writer.WriteString(value, value);
+            writer.WriteEndObject();
+            writer.Flush();
+        }
+
+
+        private static RecyclableMemoryStreamManager StreamManager = new RecyclableMemoryStreamManager();
+        [TestMethod] public void TestRecyclableStream()
+        {
+            List<string> values = new List<string>() { "ABCD", "A", "AB", "ABC" };
+
+            JsonWriterOptions options = new JsonWriterOptions()
+            {
+                Indented = false,
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
+            };
+
+            using (MemoryStream stream = StreamManager.GetStream())
+            {
+                using (Utf8JsonWriter writer = new Utf8JsonWriter(stream, options))
+                {
+                    foreach (string value in values)
+                    {
+                        SerializeToJson(writer, value);
+
+                        ReadOnlySpan<byte> span = new ReadOnlySpan<byte>(stream.GetBuffer(), 0, (int)writer.BytesCommitted);
+
+                        Console.WriteLine(Encoding.UTF8.GetString(span) + " = " + writer.BytesCommitted.ToString() + " bytes");
+
+                        writer.Reset();
+                        stream.Position = 0;
+                    }
+                }
             }
         }
     }
