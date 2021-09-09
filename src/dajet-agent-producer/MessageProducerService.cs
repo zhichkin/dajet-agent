@@ -70,7 +70,7 @@ namespace DaJet.Agent.Producer
                 }
 
                 if (Settings.DatabaseSettings.UseNotifications
-                    && Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer
+                    && Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer
                     && !string.IsNullOrWhiteSpace(Settings.DatabaseSettings.NotificationQueueName))
                 {
                     try

@@ -11,7 +11,7 @@ namespace DaJet.Agent.Producer
     }
     public sealed class DatabaseSettings
     {
-        public DatabaseProviders DatabaseProvider { get; set; } = DatabaseProviders.SQLServer;
+        public DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
         public string ConnectionString { get; set; } = string.Empty;
         public int MessagesPerTransaction { get; set; } = 1000;
         public int DatabaseQueryingPeriodicity { get; set; } = 60; // seconds

@@ -39,7 +39,7 @@ namespace DaJet.Agent.Producer
         }
         private DbConnection CreateDbConnection()
         {
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer)
             {
                 return new SqlConnection(Settings.DatabaseSettings.ConnectionString);
             }
@@ -102,7 +102,7 @@ namespace DaJet.Agent.Producer
 
         private int CountDatabaseMessages()
         {
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.PostgreSQL)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.PostgreSQL)
             {
                 throw new NotSupportedException("Counting database messages is not supported for PostgreSQL.");
             }
@@ -126,7 +126,7 @@ namespace DaJet.Agent.Producer
 
         private string CountMessagesScript()
         {
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer)
             {
                 return MS_CountMessagesScript();
             }
@@ -140,7 +140,7 @@ namespace DaJet.Agent.Producer
 
         private string ConsumeDatabaseMessagesScript(int messageCount)
         {
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer)
             {
                 return MS_ReceiveMessagesScript(messageCount);
             }

@@ -15,7 +15,7 @@ namespace DaJet.Agent.Consumer
     }
     public sealed class DatabaseSettings
     {
-        public DatabaseProviders DatabaseProvider { get; set; } = DatabaseProviders.SQLServer;
+        public DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
         public string ConnectionString { get; set; } = string.Empty;
         public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }

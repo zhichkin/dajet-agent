@@ -21,6 +21,7 @@ namespace DaJet.Agent.CLI
         #region "Constants"
 
         private const string EXCHANGE_NAMESPACE = "РИБ";
+        private const string PRODUCER_EXCHANGE_NAME = "АПО";
         private const string METAOBJECT_BASE_NAME = "РегистрСведений";
         private const string CONSUMER_TABLE_QUEUE_NAME = "ВходящаяОчередьRabbitMQ";
         private const string PRODUCER_TABLE_QUEUE_NAME = "ИсходящаяОчередьRabbitMQ";
@@ -47,10 +48,6 @@ namespace DaJet.Agent.CLI
 
         public static int Main(string[] args)
         {
-            //args = new string[] { "--ms", "ZHICHKIN", "--d", "test_node_1", "--o", "C:\\temp" };
-            //args = new string[] { "--ms", "ZHICHKIN", "--d", "my_exchange", "--rmq", "Тестовый" };
-            //args = new string[] { "--pg", "127.0.0.1", "--d", "test_node_2", "--u", "postgres", "--p", "postgres", "--rmq", "Тестовый" };
-
             RootCommand command = new RootCommand()
             {
                 new Option<string>("--ms", "Microsoft SQL Server address or name"),
@@ -58,11 +55,11 @@ namespace DaJet.Agent.CLI
                 new Option<string>("--d", "Database name"),
                 new Option<string>("--u", "User name (Windows authentication is used if not defined)"),
                 new Option<string>("--p", "User password if SQL Server authentication is used"),
-                new Option<string>("--rmq", "Publication name to use for RabbitMQ queues creation"),
+                //new Option<string>("--rmq", "Publication name to use for RabbitMQ queues creation"),
                 new Option<FileInfo>("--o", "Catalog path to save settings files")
             };
-            command.Description = "DaJet Agent CLI (settings files generation and RabbitMQ queues creation tool)";
-            command.Handler = CommandHandler.Create<string, string, string, string, string, string, FileInfo>(ExecuteCommand);
+            command.Description = "DaJet Agent CLI (settings files generation)";
+            command.Handler = CommandHandler.Create<string, string, string, string, string, FileInfo>(ExecuteCommand);
             return command.Invoke(args);
         }
         private static void ShowErrorMessage(string errorText)
@@ -71,12 +68,13 @@ namespace DaJet.Agent.CLI
             Console.WriteLine(errorText);
             Console.ForegroundColor = ConsoleColor.White;
         }
-        private static void ExecuteCommand(string ms, string pg, string d, string u, string p, string rmq, FileInfo o)
+        private static void ExecuteCommand(string ms, string pg, string d, string u, string p, FileInfo o)
         {
             if (string.IsNullOrWhiteSpace(ms) && string.IsNullOrWhiteSpace(pg))
             {
                 ShowErrorMessage(SERVER_IS_NOT_DEFINED_ERROR); return;
             }
+
             if (string.IsNullOrWhiteSpace(d))
             {
                 ShowErrorMessage(DATABASE_IS_NOT_DEFINED_ERROR); return;
@@ -84,29 +82,27 @@ namespace DaJet.Agent.CLI
 
             if (o == null)
             {
-                Console.WriteLine(OUTPUT_CATALOG_IS_NOT_DEFINED);
+                ShowErrorMessage(OUTPUT_CATALOG_IS_NOT_DEFINED); return;
             }
-            else
-            {
-                GenerateSettingsFiles(ms, pg, d, u, p, o);
-                Console.WriteLine(SETTINGS_FILES_ARE_GENERATED_SUCCESSFULLY);
-                Console.WriteLine(string.Format(SETTINGS_FILES_CATALOG_PATH_NOTICE, o.FullName));
-            }
+            
+            GenerateSettingsFiles(ms, pg, d, u, p, o);
+            Console.WriteLine(SETTINGS_FILES_ARE_GENERATED_SUCCESSFULLY);
+            Console.WriteLine(string.Format(SETTINGS_FILES_CATALOG_PATH_NOTICE, o.FullName));
 
-            if (!string.IsNullOrWhiteSpace(rmq))
-            {
-                try
-                {
-                    CreateRabbitMQQueues(ms, pg, d, u, p, rmq);
-                }
-                catch (Exception error)
-                {
-                    Console.WriteLine(ExceptionHelper.GetErrorText(error));
-                }
-                Console.WriteLine();
-                Console.WriteLine(PRESS_ANY_KEY_TO_EXIT_MESSAGE);
-                Console.ReadKey(false);
-            }
+            //if (!string.IsNullOrWhiteSpace(rmq))
+            //{
+            //    try
+            //    {
+            //        CreateRabbitMQQueues(ms, pg, d, u, p, rmq);
+            //    }
+            //    catch (Exception error)
+            //    {
+            //        Console.WriteLine(ExceptionHelper.GetErrorText(error));
+            //    }
+            //    Console.WriteLine();
+            //    Console.WriteLine(PRESS_ANY_KEY_TO_EXIT_MESSAGE);
+            //    Console.ReadKey(false);
+            //}
         }
 
         #region "Settings files generation"
@@ -116,12 +112,12 @@ namespace DaJet.Agent.CLI
             IMetadataService metadataService = new MetadataService();
             if (!string.IsNullOrWhiteSpace(ms))
             {
-                metadataService.UseDatabaseProvider(DatabaseProviders.SQLServer);
+                metadataService.UseDatabaseProvider(DatabaseProvider.SQLServer);
                 metadataService.ConfigureConnectionString(ms, d, u, p);
             }
             else
             {
-                metadataService.UseDatabaseProvider(DatabaseProviders.PostgreSQL);
+                metadataService.UseDatabaseProvider(DatabaseProvider.PostgreSQL);
                 metadataService.ConfigureConnectionString(pg, d, u, p);
             }
 
@@ -141,10 +137,12 @@ namespace DaJet.Agent.CLI
         {
             MessageConsumerSettings settings = new MessageConsumerSettings();
 
-            MetadataObject metaObject = infoBase.InformationRegisters.Values.Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
+            ApplicationObject metaObject = infoBase.InformationRegisters.Values
+                .Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
+
             if (metaObject == null) return settings;
 
-            metadataService.EnrichFromDatabase(metaObject);
+            //metadataService.EnrichFromDatabase(metaObject);
 
             settings.DatabaseSettings = new Consumer.DatabaseSettings()
             {
@@ -172,11 +170,10 @@ namespace DaJet.Agent.CLI
         }
         private static void SaveConsumerSettings(string filePath, MessageConsumerSettings consumerSettings)
         {
-            JavaScriptEncoder encoder = JavaScriptEncoder.Create(new UnicodeRange(0, 0xFFFF));
             JsonSerializerOptions options = new JsonSerializerOptions()
             {
                 WriteIndented = true,
-                Encoder = encoder
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             };
             byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(consumerSettings, options);
             string json = Encoding.UTF8.GetString(bytes);
@@ -190,10 +187,14 @@ namespace DaJet.Agent.CLI
         {
             MessageProducerSettings settings = new MessageProducerSettings();
 
-            MetadataObject metaObject = infoBase.InformationRegisters.Values.Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
+            settings.MessageBrokerSettings.TopicExchange = string.Format("{0}.{1}", EXCHANGE_NAMESPACE, PRODUCER_EXCHANGE_NAME);
+
+            ApplicationObject metaObject = infoBase.InformationRegisters.Values
+                .Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
+
             if (metaObject == null) return settings;
 
-            metadataService.EnrichFromDatabase(metaObject);
+            //metadataService.EnrichFromDatabase(metaObject);
 
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
@@ -221,11 +222,10 @@ namespace DaJet.Agent.CLI
         }
         private static void SaveProducerSettings(string filePath, MessageProducerSettings producerSettings)
         {
-            JavaScriptEncoder encoder = JavaScriptEncoder.Create(new UnicodeRange(0, 0xFFFF));
             JsonSerializerOptions options = new JsonSerializerOptions()
             {
                 WriteIndented = true,
-                Encoder = encoder
+                Encoder = JavaScriptEncoder.Create(UnicodeRanges.All)
             };
             byte[] bytes = JsonSerializer.SerializeToUtf8Bytes(producerSettings, options);
             string json = Encoding.UTF8.GetString(bytes);
@@ -262,12 +262,12 @@ namespace DaJet.Agent.CLI
             IMetadataService metadataService = new MetadataService();
             if (!string.IsNullOrWhiteSpace(ms))
             {
-                metadataService.UseDatabaseProvider(DatabaseProviders.SQLServer);
+                metadataService.UseDatabaseProvider(DatabaseProvider.SQLServer);
                 metadataService.ConfigureConnectionString(ms, d, u, p);
             }
             else
             {
-                metadataService.UseDatabaseProvider(DatabaseProviders.PostgreSQL);
+                metadataService.UseDatabaseProvider(DatabaseProvider.PostgreSQL);
                 metadataService.ConfigureConnectionString(pg, d, u, p);
             }
 

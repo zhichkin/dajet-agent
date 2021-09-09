@@ -45,7 +45,7 @@ namespace DaJet.Agent.Consumer
             {
                 Sender = message.Sender
             };
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.PostgreSQL)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.PostgreSQL)
             {
                 // SELECT ofset FROM _yearoffset - returns zero rows
                 dbm.DateTimeStamp = DateTime.Now;
@@ -65,7 +65,7 @@ namespace DaJet.Agent.Consumer
         }
         public bool InsertMessage(DatabaseMessage message)
         {
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProviders.SQLServer)
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer)
             {
                 try
                 {
