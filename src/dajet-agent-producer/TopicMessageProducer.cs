@@ -140,9 +140,11 @@ namespace DaJet.Agent.Producer
             if (Connection != null && Connection.IsOpen) return;
             if (Connection != null)
             {
-                Connection.ConnectionBlocked -= HandleConnectionBlocked;
-                Connection.ConnectionUnblocked -= HandleConnectionUnblocked;
-                Connection.Dispose();
+                // Causes "Cannot access a disposed object" exception:
+                // Connection.ConnectionBlocked -= HandleConnectionBlocked;
+                // Connection.ConnectionUnblocked -= HandleConnectionUnblocked;
+
+                Connection.Dispose(); // It is possible that connection is closed, but not disposed yet.
             }
 
             Connection = CreateConnection();
