@@ -8,9 +8,9 @@ namespace DaJet.Benchmarks
     {
         public static void Main()
         {
-            //var summary = BenchmarkRunner.Run<SqlStreamingBenchmark>();
+            var summary = BenchmarkRunner.Run<SqlStreamingBenchmark>();
             
-            Summary summary = BenchmarkRunner.Run<JsonSerializationBenchmark>();
+            //Summary summary = BenchmarkRunner.Run<JsonSerializationBenchmark>();
 
             _ = Console.ReadKey(false);
         }

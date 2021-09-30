@@ -1,9 +1,11 @@
 using DaJet.Agent.MessageHandlers;
+using Microsoft.Data.SqlClient;
 using Microsoft.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
@@ -121,6 +123,50 @@ namespace test_json_serializer
 
                         writer.Reset();
                         stream.Position = 0;
+                    }
+                }
+            }
+        }
+
+
+        private const string ConnectionString = "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True";
+        private const string SelectMessagesScript = "SELECT TOP 1000 _Fld8900 AS [“ипќперации], _Fld8898 AS [“ип—ообщени€], _Fld8899 AS [“ело—ообщени€] FROM _InfoRg8895 WITH (ROWLOCK, READPAST) ORDER BY _Fld8896 ASC, _Fld8897 ASC;";
+        [TestMethod] public void TestDatabaseStreaming()
+        {
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+
+                using (SqlCommand command = connection.CreateCommand())
+                {
+                    command.CommandTimeout = 10;
+                    command.CommandType = CommandType.Text;
+                    command.CommandText = SelectMessagesScript;
+
+                    using (SqlDataReader reader = command.ExecuteReader(CommandBehavior.SequentialAccess))
+                    {
+                        int bufferSize = 4096;
+                        byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+
+                        while (reader.Read())
+                        {
+                            long dataIndex = 0;
+                            long bytesRead = 0;
+                            int bufferIndex = 0;
+                            do
+                            {
+                                bytesRead = reader.GetBytes(2, dataIndex, buffer, bufferIndex, bufferSize);
+
+                                ReadOnlyMemory<byte> memory = new ReadOnlyMemory<byte>(buffer, 0, (int)bytesRead);
+
+                                dataIndex += bytesRead;
+                                bufferIndex += (int)bytesRead;
+                            }
+                            while (bytesRead == bufferSize);
+                        }
+                        reader.Close();
+
+                        ArrayPool<byte>.Shared.Return(buffer);
                     }
                 }
             }
