@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <RootNamespace>DaJet.Database.Adapter</RootNamespace>
+    <AssemblyName>DaJet.Database.Adapter</AssemblyName>
+    <Copyright>Zhichkin © 2021</Copyright>
+    <Authors>Zhichkin</Authors>
+    <PackageId>DaJet.Database.Adapter</PackageId>
+    <Product>DaJet.Database.Adapter</Product>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Description>1C:Enterprise 8 database adapter for messaging.
+Microsoft SQL Server and PostgreSQL are supported.</Description>
+    <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
+    <PackageReleaseNotes>The 1C:Enterprise 8 database adapter provides the producing and consuming of messages from the 1C information registers configured for use as incoming and outgoing message queues.</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="DaJet.Metadata" Version="3.1.6" />
+  </ItemGroup>
+
+</Project>

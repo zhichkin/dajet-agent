@@ -11,7 +11,7 @@ GO
 IF NOT EXISTS(SELECT 1 FROM sys.triggers WHERE name = N'_InfoRg9206_INSERT')
 BEGIN
 	EXECUTE(N'CREATE TRIGGER _InfoRg9206_INSERT ON _InfoRg9206
-INSTEAD OF INSERT
+INSTEAD OF INSERT NOT FOR REPLICATION
 AS
 	IF EXISTS(SELECT 1 FROM inserted WHERE _Fld9207 IS NULL OR _Fld9207 = 0)
 	BEGIN
@@ -33,10 +33,10 @@ GO
 
 --BEGIN TRANSACTION;
 
---SELECT _Fld3155  AS [МоментВремени],
---NEXT VALUE FOR _InfoRg3154_SEQ OVER (ORDER BY _Fld3155 ASC) AS [НомерСообщения]
+--SELECT _Fld3155 AS [МоментВремени], _Fld3156 AS [Идентификатор],
+--NEXT VALUE FOR _InfoRg3154_SEQ OVER (ORDER BY _Fld3155 ASC, _Fld3156 ASC) AS [НомерСообщения]
 --INTO #_InfoRg3154_Copy
---FROM _InfoRg3154 WITH (TABLOCKX,HOLDLOCK);
+--FROM _InfoRg3154 WITH (TABLOCKX, HOLDLOCK);
 
 ----SELECT * FROM #_InfoRg3154_Copy;
 
@@ -45,7 +45,10 @@ GO
 --FROM _InfoRg3154 AS T
 --INNER JOIN
 --#_InfoRg3154_Copy AS C
---ON T._Fld3155 = C.[МоментВремени];
+--ON T._Fld3155 = C.[МоментВремени]
+--AND T._Fld3156 = C.[Идентификатор];
+
+--CREATE TRIGGER ...
 
 --COMMIT TRANSACTION;
 

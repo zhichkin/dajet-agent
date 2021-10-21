@@ -1,6 +1,11 @@
 CREATE SEQUENCE IF NOT EXISTS _inforg152_SEQ AS bigint
 INCREMENT BY 1 START WITH 1 CACHE 1;
 
+--BEGIN TRANSACTION;
+--LOCK TABLE _inforg152 IN ACCESS EXCLUSIVE MODE;
+-- do some work here ...
+--COMMIT TRANSACTION; -- unlocks table
+
 WITH cte AS
 (
 	SELECT _fld153, _fld154, nextval('_inforg152_seq') AS msgno
