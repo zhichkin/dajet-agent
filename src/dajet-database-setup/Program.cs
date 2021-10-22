@@ -1,42 +1,41 @@
-﻿using System;
+﻿using DaJet.Database.Adapter;
+using DaJet.Metadata;
+using DaJet.Metadata.Model;
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Invocation;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Reflection;
 
 namespace DaJet.Database.Setup
 {
     public static class Program
     {
-        private const string INCOMING_QUEUE_NAME = "DaJetExchangeВходящаяОчередь";
-        private const string OUTGOING_QUEUE_NAME = "DaJetExchangeИсходящаяОчередь";
-
         private const string SERVER_IS_NOT_DEFINED_ERROR = "Server address is not defined.";
         private const string DATABASE_IS_NOT_DEFINED_ERROR = "Database name is not defined.";
 
-        //private static readonly IDatabaseConfigurator DbConfigurator = new DatabaseConfigurator();
-        //private static readonly IDatabaseInterfaceValidator DbValidator = new DatabaseInterfaceValidator();
+        private static readonly IDatabaseConfigurator DbConfigurator = new DatabaseConfigurator();
+        private static readonly IDatabaseInterfaceValidator DbValidator = new DatabaseInterfaceValidator();
 
         public static int Main(string[] args)
         {
-            //args = new string[] { "--ms", "zhichkin", "--db", "cerberus", "--verbose" };
-            //args = new string[] { "--pg", "127.0.0.1", "--db", "test_node_2", "--usr", "postgres", "--pwd", "postgres" };
-
             RootCommand command = new RootCommand()
             {
                 new Option<string>("--ms", "Microsoft SQL Server address or name"),
                 new Option<string>("--pg", "PostgresSQL server address or name"),
                 new Option<string>("--db", "Database name"),
                 new Option<string>("--usr", "User name (Windows authentication is used if not defined)"),
-                new Option<string>("--pwd", "User password if SQL Server authentication is used"),
-                new Option<bool>("--verbose", "Verbose mode: shows detailed output in console window")
+                new Option<string>("--pwd", "User password if SQL Server authentication is used")
             };
-            command.Description = "DaJet Exchange Setup Utility 1.0";
-            command.Handler = CommandHandler.Create<string, string, string, string, string, bool>(ExecuteCommand);
+            command.Description = "DaJet Agent Database Setup Utility 1.0";
+            command.Handler = CommandHandler.Create<string, string, string, string, string>(ExecuteCommand);
             return command.Invoke(args);
         }
         private static void ShowErrorMessage(string message)
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine(message);
+            Console.Error.WriteLine(message);
             Console.ForegroundColor = ConsoleColor.White;
         }
         private static void ShowSuccessMessage(string message)
@@ -45,16 +44,18 @@ namespace DaJet.Database.Setup
             Console.WriteLine(message);
             Console.ForegroundColor = ConsoleColor.White;
         }
-        private static void ExecuteCommand(string ms, string pg, string db, string usr, string pwd, bool verbose)
+        private static int ExecuteCommand(string ms, string pg, string db, string usr, string pwd)
         {
             if (string.IsNullOrWhiteSpace(ms) && string.IsNullOrWhiteSpace(pg))
             {
-                ShowErrorMessage(SERVER_IS_NOT_DEFINED_ERROR); return;
+                ShowErrorMessage(SERVER_IS_NOT_DEFINED_ERROR);
+                return 1;
             }
 
             if (string.IsNullOrWhiteSpace(db))
             {
-                ShowErrorMessage(DATABASE_IS_NOT_DEFINED_ERROR); return;
+                ShowErrorMessage(DATABASE_IS_NOT_DEFINED_ERROR);
+                return 1;
             }
 
             IMetadataService metadataService = ConfigureMetadataService(ms, pg, db, usr, pwd);
@@ -63,22 +64,21 @@ namespace DaJet.Database.Setup
                 .UseDatabaseProvider(metadataService.DatabaseProvider)
                 .UseConnectionString(metadataService.ConnectionString);
 
-            if (TryOpenInfoBase(metadataService, out InfoBase infoBase, out string errorMessage))
-            {
-                ShowInfoBaseInfo(infoBase);
-                SetupDatabase(infoBase);
-            }
-            else
+            if (!TryOpenInfoBase(metadataService, out InfoBase infoBase, out string errorMessage))
             {
                 ShowErrorMessage(errorMessage);
+                return 1;
             }
 
-            //if (verbose)
-            //{
-            //    Console.WriteLine();
-            //    Console.WriteLine("Press any key to exit ...");
-            //    Console.ReadKey(false);
-            //}
+            ShowInfoBaseInfo(infoBase);
+
+            int exitCode = SetupOutgoingQueue(infoBase);
+            if (exitCode == 0)
+            {
+                exitCode = SetupIncomingQueue(infoBase);
+            }
+
+            return exitCode;
         }
         private static IMetadataService ConfigureMetadataService(string ms, string pg, string db, string usr, string pwd)
         {
@@ -124,79 +124,99 @@ namespace DaJet.Database.Setup
             Console.WriteLine("Alias = " + config.Alias);
             Console.WriteLine("Comment = " + config.Comment);
             Console.WriteLine("Version = " + config.Version);
+            Console.WriteLine("YearOffset = " + infoBase.YearOffset.ToString());
             Console.WriteLine("ConfigVersion = " + config.ConfigVersion);
             Console.WriteLine();
         }
-        private static void SetupDatabase(InfoBase infoBase)
-        {
-            SetupIncomingQueue(infoBase);
-            //SetupOutgoingQueue(infoBase);
-        }
 
-        private static void SetupIncomingQueue(InfoBase infoBase)
+        private static int SetupOutgoingQueue(InfoBase infoBase)
         {
-            ApplicationObject metaObject = infoBase
-                .InformationRegisters.Values
-                .Where(o => o.Name == INCOMING_QUEUE_NAME)
-                .FirstOrDefault();
+            Type template = typeof(DatabaseOutgoingMessage);
 
-            if (metaObject == null)
+            TableAttribute table = template.GetCustomAttribute<TableAttribute>();
+            if (table == null || string.IsNullOrWhiteSpace(table.Name))
             {
-                ShowErrorMessage($"Metadata object \"РегистрСведений.{INCOMING_QUEUE_NAME}\" is not found.");
-                return;
+                ShowErrorMessage($"TableAttribute is not defined for template type \"{template.FullName}\".");
+                return 1;
             }
 
-            if (!DbValidator.IncomingQueueInterfaceIsValid(metaObject, out List<string> errors))
+            ApplicationObject queue = DbConfigurator.FindMetadataObjectByName(infoBase, table.Name);
+            if (queue == null)
             {
-                ShowErrorMessage($"РегистрСведений.{INCOMING_QUEUE_NAME}");
+                ShowErrorMessage($"Metadata object \"{table.Name}\" is not found.");
+                return 1;
+            }
+
+            if (!DbValidator.OutgoingInterfaceIsValid(queue, out List<string> errors))
+            {
+                ShowErrorMessage($"{table.Name}");
                 foreach (string error in errors)
                 {
                     ShowErrorMessage(error);
                 }
+                return 1;
             }
 
-            if (errors.Count > 0)
-            {
-                return;
-            }
+            int exitCode = 0;
 
             try
             {
-                DbConfigurator.ConfigureIncomingQueue(metaObject);
-                ShowSuccessMessage($"РегистрСведений.{INCOMING_QUEUE_NAME} configured successfully");
+                DbConfigurator.ConfigureOutgoingQueue(queue);
+                ShowSuccessMessage($"Outgoing queue \"{table.Name}\" [{queue.TableName}] configured successfully.");
             }
             catch (Exception error)
             {
-                ShowErrorMessage($"РегистрСведений.{INCOMING_QUEUE_NAME} configuration failed");
-                Console.WriteLine();
+                exitCode = 1;
+                ShowErrorMessage($"Failed to configure outgoing queue \"{table.Name}\" [{queue.TableName}].");
                 ShowErrorMessage(ExceptionHelper.GetErrorText(error));
             }
+
+            return exitCode;
         }
 
-        private static void SetupOutgoingQueue(InfoBase infoBase)
+        private static int SetupIncomingQueue(InfoBase infoBase)
         {
-            ApplicationObject metaObject = infoBase
-                .InformationRegisters.Values
-                .Where(o => o.Name == OUTGOING_QUEUE_NAME)
-                .FirstOrDefault();
+            Type template = typeof(DatabaseIncomingMessage);
 
-            if (metaObject == null)
+            TableAttribute table = template.GetCustomAttribute<TableAttribute>();
+            if (table == null || string.IsNullOrWhiteSpace(table.Name))
             {
-                ShowErrorMessage($"Metadata object \"РегистрСведений.{OUTGOING_QUEUE_NAME}\" is not found.");
-                return;
+                ShowErrorMessage($"TableAttribute is not defined for template type \"{template.FullName}\".");
+                return 1;
             }
 
-            if (!DbValidator.OutgoingQueueInterfaceIsValid(metaObject, out List<string> errors))
+            ApplicationObject queue = DbConfigurator.FindMetadataObjectByName(infoBase, table.Name);
+            if (queue == null)
             {
-                ShowErrorMessage($"РегистрСведений.{OUTGOING_QUEUE_NAME}");
+                ShowErrorMessage($"Metadata object \"{table.Name}\" is not found.");
+                return 1;
+            }
+
+            if (!DbValidator.IncomingInterfaceIsValid(queue, out List<string> errors))
+            {
+                ShowErrorMessage($"{table.Name}");
                 foreach (string error in errors)
                 {
                     ShowErrorMessage(error);
                 }
-                return;
+                return 1;
             }
 
-            ShowSuccessMessage($"РегистрСведений.{OUTGOING_QUEUE_NAME}");
+            int exitCode = 0;
+
+            try
+            {
+                DbConfigurator.ConfigureIncomingQueue(queue);
+                ShowSuccessMessage($"Incoming queue \"{table.Name}\" [{queue.TableName}] configured successfully.");
+            }
+            catch (Exception error)
+            {
+                exitCode = 1;
+                ShowErrorMessage($"Failed to configure incoming queue \"{table.Name}\" [{queue.TableName}].");
+                ShowErrorMessage(ExceptionHelper.GetErrorText(error));
+            }
+
+            return exitCode;
         }
     }
 }

@@ -2,46 +2,46 @@
   "CriticalErrorDelay": 300,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet_agent;Integrated Security=True",
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 10,
     "UseNotifications": false,
     "NotificationQueueName": "dajet-agent-export-queue",
     "WaitForNotificationTimeout": 180,
     "DatabaseQueue": {
-      "TableName": "_InfoRg68",
+      "TableName": "_InfoRg3551",
       "ObjectName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
       "Fields": [
         {
-          "Name": "_Fld71",
+          "Name": "_Fld3554",
           "Property": "Отправитель"
         },
         {
-          "Name": "_Fld72",
+          "Name": "_Fld3555",
           "Property": "Получатели"
         },
         {
-          "Name": "_Fld73",
+          "Name": "_Fld3556",
           "Property": "ТипСообщения"
         },
         {
-          "Name": "_Fld74",
+          "Name": "_Fld3557",
           "Property": "ТелоСообщения"
         },
         {
-          "Name": "_Fld69",
+          "Name": "_Fld3552",
           "Property": "МоментВремени"
         },
         {
-          "Name": "_Fld70",
+          "Name": "_Fld3553",
           "Property": "Идентификатор"
         },
         {
-          "Name": "_Fld75",
+          "Name": "_Fld3558",
           "Property": "ДатаВремя"
         },
         {
-          "Name": "_Fld76",
+          "Name": "_Fld3559",
           "Property": "ТипОперации"
         }
       ]

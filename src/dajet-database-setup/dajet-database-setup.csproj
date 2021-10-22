@@ -24,4 +24,8 @@ Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.21308.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\dajet-database-adapter\dajet-database-adapter.csproj" />
+  </ItemGroup>
+
 </Project>

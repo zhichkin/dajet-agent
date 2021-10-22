@@ -8,63 +8,73 @@ namespace DaJet.Database.Adapter
 {
     public interface IDatabaseInterfaceValidator
     {
-        bool IncomingQueueInterfaceIsValid(ApplicationObject queue, out List<string> errors);
-        bool OutgoingQueueInterfaceIsValid(ApplicationObject queue, out List<string> errors);
+        bool IncomingInterfaceIsValid(ApplicationObject queue, out List<string> errors);
+        bool OutgoingInterfaceIsValid(ApplicationObject queue, out List<string> errors);
+        bool InterfaceIsValid(Type template, ApplicationObject queue, out List<string> errors);
     }
     public sealed class DatabaseInterfaceValidator : IDatabaseInterfaceValidator
     {
-        private const string INCOMING_QUEUE_NAME = "DaJetExchangeВходящаяОчередь";
-        private const string OUTGOING_QUEUE_NAME = "DaJetExchangeИсходящаяОчередь";
-
-        public bool IncomingQueueInterfaceIsValid(ApplicationObject queue, out List<string> errors)
+        public bool IncomingInterfaceIsValid(ApplicationObject queue, out List<string> errors)
+        {
+            return InterfaceIsValid(typeof(DatabaseIncomingMessage), queue, out errors);
+        }
+        public bool OutgoingInterfaceIsValid(ApplicationObject queue, out List<string> errors)
+        {
+            return InterfaceIsValid(typeof(DatabaseOutgoingMessage), queue, out errors);
+        }
+        public bool InterfaceIsValid(Type template, ApplicationObject queue, out List<string> errors)
         {
             errors = new List<string>();
 
-            if (!(queue is InformationRegister))
+            if (!QueueNameIsValid(template, queue, in errors))
             {
-                errors.Add($"The metadata object \"{queue.Name}\" is not an information register.");
+                return false;
             }
 
-            if (queue.Name != INCOMING_QUEUE_NAME)
+            ValidateInterface(queue, template, in errors);
+
+            return (errors.Count == 0);
+        }
+        private bool QueueNameIsValid(Type template, ApplicationObject queue, in List<string> errors)
+        {
+            TableAttribute table = template.GetCustomAttribute<TableAttribute>();
+            
+            if (table == null || string.IsNullOrWhiteSpace(table.Name))
             {
-                errors.Add($"The name of metadata object \"{queue.Name}\" does not match \"{INCOMING_QUEUE_NAME}\".");
+                errors.Add($"TableAttribute is not defined for template type \"{template.FullName}\".");
+                return false;
+            }
+
+            string[] names = table.Name.Split('.', StringSplitOptions.RemoveEmptyEntries);
+            if (names.Length != 2)
+            {
+                errors.Add($"Bad template metadata object name format: {nameof(table.Name)}");
+            }
+            string baseType = names[0];
+            string typeName = names[1];
+
+            if ((baseType == "Справочник" && !(queue is Catalog)) ||
+                (baseType == "РегистрСведений" && !(queue is InformationRegister)))
+            {
+                errors.Add($"The base type \"{baseType}\" does not match the metadata object \"{queue.Name}\".");
+                return false;
+            }
+
+            if (queue.Name != typeName)
+            {
+                errors.Add($"The name of metadata object \"{queue.Name}\" does not match \"{typeName}\".");
+                return false;
             }
 
             if (string.IsNullOrWhiteSpace(queue.TableName))
             {
                 errors.Add($"The metadata object \"{queue.Name}\" does not have a database table defined.");
+                return false;
             }
 
-            ValidateDatabaseInterface(queue, typeof(DatabaseIncomingMessage), in errors);
-
-            return (errors.Count == 0);
+            return true;
         }
-
-        public bool OutgoingQueueInterfaceIsValid(ApplicationObject queue, out List<string> errors)
-        {
-            errors = new List<string>();
-
-            if (!(queue is InformationRegister))
-            {
-                errors.Add($"The metadata object \"{queue.Name}\" is not an information register.");
-            }
-
-            if (queue.Name != OUTGOING_QUEUE_NAME)
-            {
-                errors.Add($"The name of metadata object \"{queue.Name}\" does not match \"{OUTGOING_QUEUE_NAME}\".");
-            }
-
-            if (string.IsNullOrWhiteSpace(queue.TableName))
-            {
-                errors.Add($"The metadata object \"{queue.Name}\" does not have a database table defined.");
-            }
-
-            ValidateDatabaseInterface(queue, typeof(DatabaseOutgoingMessage), in errors);
-
-            return (errors.Count == 0);
-        }
-
-        private void ValidateDatabaseInterface(ApplicationObject queue, Type template, in List<string> errors)
+        private void ValidateInterface(ApplicationObject queue, Type template, in List<string> errors)
         {
             foreach (PropertyInfo info in template.GetProperties())
             {

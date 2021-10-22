@@ -29,9 +29,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Management.Http", 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-benchmarks", "dajet-benchmarks\dajet-benchmarks.csproj", "{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "dajet-database-setup", "dajet-database-setup\dajet-database-setup.csproj", "{9D74E943-3ED3-44C9-A9B7-9EBB12B12916}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-database-setup", "dajet-database-setup\dajet-database-setup.csproj", "{9D74E943-3ED3-44C9-A9B7-9EBB12B12916}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-database-adapter", "dajet-database-adapter\dajet-database-adapter.csproj", "{F53E5C45-2E70-440C-8A68-B76808800CCC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test-database-setup", "test-database-setup\test-database-setup.csproj", "{2FE96C9D-24C3-445A-ACB8-F575764E9E44}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -99,6 +101,10 @@ Global
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FE96C9D-24C3-445A-ACB8-F575764E9E44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FE96C9D-24C3-445A-ACB8-F575764E9E44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FE96C9D-24C3-445A-ACB8-F575764E9E44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FE96C9D-24C3-445A-ACB8-F575764E9E44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
