@@ -1,10 +1,12 @@
 ﻿using DaJet.Metadata;
 using DaJet.Metadata.Model;
 using Microsoft.Data.SqlClient;
+using Npgsql;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 
@@ -213,40 +215,20 @@ namespace DaJet.Database.Adapter
             return script;
         }
 
-        #region "Outgoing Queue Setup"
 
-        private const string MS_CREATE_OUTGOING_SEQUENCE_SCRIPT =
-            "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = 'DaJetOutgoingQueueSequence') " +
-            "BEGIN CREATE SEQUENCE DaJetOutgoingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
 
-        private const string MS_DROP_OUTGOING_TRIGGER_SCRIPT =
-            "IF OBJECT_ID('DaJetOutgoingQueue_INSTEAD_OF_INSERT', 'TR') IS NOT NULL " +
-            "BEGIN DROP TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT END;";
-
-        private const string MS_CREATE_OUTGOING_TRIGGER_SCRIPT =
-            "CREATE TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME} INSTEAD OF INSERT NOT FOR REPLICATION AS " +
-            "INSERT {TABLE_NAME} " +
-            "({МоментВремени}, {Идентификатор}, {Отправитель}, {Получатели}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ТипОперации}) " +
-            "SELECT NEXT VALUE FOR DaJetOutgoingQueueSequence, " +
-            "i.{Идентификатор}, i.{Отправитель}, i.{Получатели}, i.{ТипСообщения}, i.{ТелоСообщения}, i.{ДатаВремя}, i.{ТипОперации} " +
-            "FROM inserted AS i;";
-
-        private const string MS_ENABLE_OUTGOING_TRIGGER_SCRIPT = "ENABLE TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME};";
-
-        private const string MS_ENUMERATE_OUTGOING_QUEUE_SCRIPT =
-            "SELECT {МоментВремени} AS [МоментВремени], {Идентификатор} AS [Идентификатор], " +
-            "NEXT VALUE FOR DaJetOutgoingQueueSequence OVER(ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) AS [НомерСообщения] " +
-            "INTO #{TABLE_NAME}_EnumCopy " +
-            "FROM {TABLE_NAME} WITH (TABLOCKX, HOLDLOCK); " +
-            "UPDATE T SET T.{МоментВремени} = C.[НомерСообщения] FROM {TABLE_NAME} AS T " +
-            "INNER JOIN #{TABLE_NAME}_EnumCopy AS C ON T.{МоментВремени} = C.[МоментВремени] AND T.{Идентификатор} = C.[Идентификатор];";
-
-        private const string MS_DROP_OUTGOING_ENUMERATION_TABLE = "DROP TABLE #{TABLE_NAME}_EnumCopy;";
-
+        private DbConnection GetDbConnection()
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                return new SqlConnection(ConnectionString);
+            }
+            return new NpgsqlConnection(ConnectionString);
+        }
         private void ExecuteNonQuery(string script)
         {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            using (SqlCommand command = connection.CreateCommand())
+            using (DbConnection connection = GetDbConnection())
+            using (DbCommand command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.Text;
                 command.CommandTimeout = 10; // seconds
@@ -258,12 +240,12 @@ namespace DaJet.Database.Adapter
         }
         private void TxExecuteNonQuery(List<string> scripts)
         {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            using (DbConnection connection = GetDbConnection())
             {
                 connection.Open();
 
-                using (SqlTransaction transaction = connection.BeginTransaction(IsolationLevel.Serializable))
-                using (SqlCommand command = connection.CreateCommand())
+                using (DbTransaction transaction = connection.BeginTransaction(IsolationLevel.Serializable))
+                using (DbCommand command = connection.CreateCommand())
                 {
                     command.Connection = connection;
                     command.Transaction = transaction;
@@ -295,19 +277,100 @@ namespace DaJet.Database.Adapter
             }
         }
 
+        #region "Outgoing Queue Setup"
+
+        #region "MS outgoing queue setup scripts"
+
+        private const string MS_CREATE_OUTGOING_SEQUENCE_SCRIPT =
+            "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = 'DaJetOutgoingQueueSequence') " +
+            "BEGIN CREATE SEQUENCE DaJetOutgoingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
+
+        private const string MS_DROP_OUTGOING_TRIGGER_SCRIPT =
+            "IF OBJECT_ID('DaJetOutgoingQueue_INSTEAD_OF_INSERT', 'TR') IS NOT NULL " +
+            "BEGIN DROP TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT END;";
+
+        private const string MS_CREATE_OUTGOING_TRIGGER_SCRIPT =
+            "CREATE TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME} INSTEAD OF INSERT NOT FOR REPLICATION AS " +
+            "INSERT {TABLE_NAME} " +
+            "({МоментВремени}, {Идентификатор}, {Отправитель}, {Получатели}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ТипОперации}) " +
+            "SELECT NEXT VALUE FOR DaJetOutgoingQueueSequence, " +
+            "i.{Идентификатор}, i.{Отправитель}, i.{Получатели}, i.{ТипСообщения}, i.{ТелоСообщения}, i.{ДатаВремя}, i.{ТипОперации} " +
+            "FROM inserted AS i;";
+
+        private const string MS_ENABLE_OUTGOING_TRIGGER_SCRIPT = "ENABLE TRIGGER DaJetOutgoingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME};";
+
+        private const string MS_ENUMERATE_OUTGOING_QUEUE_SCRIPT =
+            "SELECT {МоментВремени} AS [МоментВремени], {Идентификатор} AS [Идентификатор], " +
+            "NEXT VALUE FOR DaJetOutgoingQueueSequence OVER(ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) AS [НомерСообщения] " +
+            "INTO #{TABLE_NAME}_EnumCopy " +
+            "FROM {TABLE_NAME} WITH (TABLOCKX, HOLDLOCK); " +
+            "UPDATE T SET T.{МоментВремени} = C.[НомерСообщения] FROM {TABLE_NAME} AS T " +
+            "INNER JOIN #{TABLE_NAME}_EnumCopy AS C ON T.{МоментВремени} = C.[МоментВремени] AND T.{Идентификатор} = C.[Идентификатор];";
+
+        private const string MS_DROP_OUTGOING_ENUMERATION_TABLE = "DROP TABLE #{TABLE_NAME}_EnumCopy;";
+
+        #endregion
+
+        #region "PG outgoing queue setup scripts"
+
+        private const string PG_CREATE_OUTGOING_SEQUENCE_SCRIPT =
+            "CREATE SEQUENCE IF NOT EXISTS DaJetOutgoingQueueSequence AS bigint INCREMENT BY 1 START WITH 1 CACHE 1;";
+
+        private const string PG_ENUMERATE_OUTGOING_QUEUE_SCRIPT =
+            "LOCK TABLE {TABLE_NAME} IN ACCESS EXCLUSIVE MODE; " +
+            "WITH cte AS (SELECT {МоментВремени}, {Идентификатор}, nextval('DaJetOutgoingQueueSequence') AS msgno " +
+            "FROM {TABLE_NAME} ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) " +
+            "UPDATE {TABLE_NAME} SET {МоментВремени} = CAST(cte.msgno AS numeric(19, 0)) " +
+            "FROM cte WHERE {TABLE_NAME}.{МоментВремени} = cte.{МоментВремени} AND {TABLE_NAME}.{Идентификатор} = cte.{Идентификатор};";
+
+        private const string PG_CREATE_OUTGOING_FUNCTION_SCRIPT =
+            "CREATE OR REPLACE FUNCTION DaJetOutgoingQueue_before_insert_function() RETURNS trigger AS $$ BEGIN " +
+            "NEW.{МоментВремени} := CAST(nextval('DaJetOutgoingQueueSequence') AS numeric(19,0)); RETURN NEW; END $$ LANGUAGE 'plpgsql';";
+
+        private const string PG_DROP_OUTGOING_TRIGGER_SCRIPT = "DROP TRIGGER IF EXISTS DaJetOutgoingQueue_before_insert_trigger ON {TABLE_NAME};";
+
+        private const string PG_CREATE_OUTGOING_TRIGGER_SCRIPT =
+            "CREATE TRIGGER DaJetOutgoingQueue_before_insert_trigger BEFORE INSERT ON {TABLE_NAME} FOR EACH ROW " +
+            "EXECUTE PROCEDURE DaJetOutgoingQueue_before_insert_function();";
+
+        #endregion
+
         public void ConfigureOutgoingQueue(ApplicationObject queue)
         {
-            Type queueTemplate = typeof(DatabaseOutgoingMessage);
+            Type template = typeof(DatabaseOutgoingMessage);
 
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                MS_ConfigureOutgoingQueue(queue, template);
+            }
+            else
+            {
+                PG_ConfigureOutgoingQueue(queue, template);
+            }
+        }
+        private void MS_ConfigureOutgoingQueue(ApplicationObject queue, Type template)
+        {
             ExecuteNonQuery(MS_CREATE_OUTGOING_SEQUENCE_SCRIPT);
 
             List<string> scripts = new List<string>();
-            scripts.Add(ConfigureDatabaseScript(MS_ENUMERATE_OUTGOING_QUEUE_SCRIPT, queueTemplate, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_ENUMERATION_TABLE, queueTemplate, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_TRIGGER_SCRIPT, queueTemplate, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_CREATE_OUTGOING_TRIGGER_SCRIPT, queueTemplate, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_ENABLE_OUTGOING_TRIGGER_SCRIPT, queueTemplate, queue));
-            
+            scripts.Add(ConfigureDatabaseScript(MS_ENUMERATE_OUTGOING_QUEUE_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_ENUMERATION_TABLE, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_CREATE_OUTGOING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_ENABLE_OUTGOING_TRIGGER_SCRIPT, template, queue));
+
+            TxExecuteNonQuery(scripts);
+        }
+        private void PG_ConfigureOutgoingQueue(ApplicationObject queue, Type template)
+        {
+            ExecuteNonQuery(PG_CREATE_OUTGOING_SEQUENCE_SCRIPT);
+
+            List<string> scripts = new List<string>();
+            scripts.Add(ConfigureDatabaseScript(PG_ENUMERATE_OUTGOING_QUEUE_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_CREATE_OUTGOING_FUNCTION_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_DROP_OUTGOING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_CREATE_OUTGOING_TRIGGER_SCRIPT, template, queue));
+
             TxExecuteNonQuery(scripts);
         }
 

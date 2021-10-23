@@ -11,8 +11,8 @@ namespace Test.DaJet.Database.Setup
         {
             const string ExeFilePath = @"C:\Users\User\Desktop\GitHub\dajet-agent\src\dajet-database-setup\bin\Debug\netcoreapp3.1\dajet-dbsetup.exe";
 
-            const string ExeFileArgs = "--ms zhichkin --db cerberus";
-            //const string ExeFileArgs = "--pg 127.0.0.1 --db test_node_2 --usr postgres --pwd postgres";
+            //const string ExeFileArgs = "--ms zhichkin --db cerberus";
+            const string ExeFileArgs = "--pg 127.0.0.1 --db test_node_2 --usr postgres --pwd postgres";
 
             Stopwatch watch = new Stopwatch();
             watch.Start();
