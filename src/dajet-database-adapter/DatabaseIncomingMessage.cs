@@ -12,7 +12,9 @@ namespace DaJet.Database.Adapter
         /// <summary>
         /// "МоментВремени" Порядковый номер сообщения (может генерироваться средствами СУБД) - numeric(19,0)
         /// </summary>
-        [Column("МоментВремени")] [NotMapped] public long MessageNumber { get; set; } = 0L;
+        [Column("МоментВремени")]
+        [DatabaseGenerated(DatabaseGeneratedOption.None)]
+        public long MessageNumber { get; set; } = 0L;
         /// <summary>
         /// "Идентификатор" Уникальный идентификатор сообщения - binary(16)
         /// </summary>

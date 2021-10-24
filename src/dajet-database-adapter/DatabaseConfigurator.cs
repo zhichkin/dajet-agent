@@ -24,35 +24,6 @@ namespace DaJet.Database.Adapter
     }
     public sealed class DatabaseConfigurator : IDatabaseConfigurator
     {
-        #region "Incoming queue scripts"
-
-        private const string MS_CREATE_INCOMING_SEQUENCE_SCRIPT =
-            "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetIncomingQueueSequence') " +
-            "BEGIN CREATE SEQUENCE DaJetIncomingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
-
-        private const string MS_DROP_INCOMING_TRIGGER_SCRIPT =
-            "IF OBJECT_ID('DaJetIncomingQueue_INSTEAD_OF_INSERT', 'TR') IS NOT NULL " +
-            "DROP TRIGGER DaJetIncomingQueue_INSTEAD_OF_INSERT";
-
-        private const string MS_CREATE_INCOMING_TRIGGER_SCRIPT =
-            "CREATE TRIGGER DaJetIncomingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME} INSTEAD OF INSERT AS " +
-            "IF EXISTS(SELECT 1 FROM inserted WHERE {НомерСообщения} IS NULL OR {НомерСообщения} = 0) " +
-            "BEGIN INSERT {TABLE_NAME} " +
-            "({НомерСообщения}, {Отправитель}, {ТипОперации}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ОписаниеОшибки}, {КоличествоОшибок}) " +
-            "SELECT NEXT VALUE FOR DaJetIncomingQueueSequence, " +
-            "i.{Отправитель}, i.{ТипОперации}, i.{ТипСообщения}, i.{ТелоСообщения}, i.{ДатаВремя}, i.{ОписаниеОшибки}, i.{КоличествоОшибок} " +
-            "FROM inserted AS i; END " +
-            "ELSE BEGIN INSERT {TABLE_NAME} " +
-            "({НомерСообщения}, {Отправитель}, {ТипОперации}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ОписаниеОшибки}, {КоличествоОшибок}) " +
-            "SELECT i.{НомерСообщения}, i.{Отправитель}, i.{ТипОперации}, i.{ТипСообщения}, i.{ТелоСообщения}, i.{ДатаВремя}, i.{ОписаниеОшибки}, i.{КоличествоОшибок} " +
-            "FROM inserted AS i; END;";
-
-        #endregion
-
-        //private const string MS_CREATE_OUTGOING_SEQUENCE_SCRIPT =
-        //    "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetOutgoingQueueSequence') " +
-        //    "BEGIN CREATE SEQUENCE DaJetOutgoingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
-
         public string ConnectionString { get; private set; }
         public DatabaseProvider DatabaseProvider { get; private set; } = DatabaseProvider.SQLServer;
         public IDatabaseConfigurator UseConnectionString(string connectionString)
@@ -101,7 +72,6 @@ namespace DaJet.Database.Adapter
 
             return metaObject;
         }
-
         private DatabaseField GetDatabaseField(ApplicationObject queue, string propertyName)
         {
             foreach (MetadataProperty property in queue.Properties)
@@ -118,104 +88,6 @@ namespace DaJet.Database.Adapter
             }
             return null;
         }
-
-        private string ConfigureDatabaseScript(string scriptTemplate, Type queueTemplate, ApplicationObject queue)
-        {
-            string script = scriptTemplate.Replace("{TABLE_NAME}", queue.TableName);
-
-            foreach (PropertyInfo info in queueTemplate.GetProperties())
-            {
-                ColumnAttribute column = info.GetCustomAttribute<ColumnAttribute>();
-                if (column == null)
-                {
-                    continue;
-                }
-
-                DatabaseField field = GetDatabaseField(queue, column.Name);
-                if (field == null)
-                {
-                    continue;
-                }
-
-                script = script.Replace($"{{{column.Name}}}", field.Name);
-            }
-
-            return script;
-        }
-
-        public void ConfigureIncomingQueue(ApplicationObject queue)
-        {
-            // TODO
-
-            //CreateIncomingQueueSequence();
-            //DropIfExistsIncomingQueueTrigger();
-            //CreateIncomingQueueTrigger(queue);
-        }
-        private void CreateIncomingQueueSequence()
-        {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            using (SqlCommand command = connection.CreateCommand())
-            {
-                command.CommandType = CommandType.Text;
-                command.CommandText = MS_CREATE_INCOMING_SEQUENCE_SCRIPT;
-                command.CommandTimeout = 10; // seconds
-
-                connection.Open();
-                int affected = command.ExecuteNonQuery();
-            }
-        }
-        private void DropIfExistsIncomingQueueTrigger()
-        {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            using (SqlCommand command = connection.CreateCommand())
-            {
-                command.CommandType = CommandType.Text;
-                command.CommandText = MS_DROP_INCOMING_TRIGGER_SCRIPT;
-                command.CommandTimeout = 10; // seconds
-
-                connection.Open();
-                int affected = command.ExecuteNonQuery();
-            }
-        }
-        private void CreateIncomingQueueTrigger(ApplicationObject queue)
-        {
-            using (SqlConnection connection = new SqlConnection(ConnectionString))
-            using (SqlCommand command = connection.CreateCommand())
-            {
-                command.CommandType = CommandType.Text;
-                command.CommandText = ConfigureCreateIncomingQueueTriggerScript(queue);
-                command.CommandTimeout = 10; // seconds
-
-                connection.Open();
-                int affected = command.ExecuteNonQuery();
-            }
-        }
-        private string ConfigureCreateIncomingQueueTriggerScript(ApplicationObject queue)
-        {
-            string script = MS_CREATE_INCOMING_TRIGGER_SCRIPT
-                .Replace("{TABLE_NAME}", queue.TableName);
-
-            foreach (PropertyInfo info in typeof(DatabaseIncomingMessage).GetProperties())
-            {
-                ColumnAttribute column = info.GetCustomAttribute<ColumnAttribute>();
-                if (column == null)
-                {
-                    continue;
-                }
-
-                DatabaseField field = GetDatabaseField(queue, column.Name);
-                if (field == null)
-                {
-                    continue;
-                }
-
-                script = script.Replace($"{{{column.Name}}}", field.Name);
-            }
-
-            return script;
-        }
-
-
 
         private DbConnection GetDbConnection()
         {
@@ -275,6 +147,29 @@ namespace DaJet.Database.Adapter
                     }
                 }
             }
+        }
+        private string ConfigureDatabaseScript(string scriptTemplate, Type queueTemplate, ApplicationObject queue)
+        {
+            string script = scriptTemplate.Replace("{TABLE_NAME}", queue.TableName);
+
+            foreach (PropertyInfo info in queueTemplate.GetProperties())
+            {
+                ColumnAttribute column = info.GetCustomAttribute<ColumnAttribute>();
+                if (column == null)
+                {
+                    continue;
+                }
+
+                DatabaseField field = GetDatabaseField(queue, column.Name);
+                if (field == null)
+                {
+                    continue;
+                }
+
+                script = script.Replace($"{{{column.Name}}}", field.Name);
+            }
+
+            return script;
         }
 
         #region "Outgoing Queue Setup"
@@ -370,6 +265,105 @@ namespace DaJet.Database.Adapter
             scripts.Add(ConfigureDatabaseScript(PG_CREATE_OUTGOING_FUNCTION_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(PG_DROP_OUTGOING_TRIGGER_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(PG_CREATE_OUTGOING_TRIGGER_SCRIPT, template, queue));
+
+            TxExecuteNonQuery(scripts);
+        }
+
+        #endregion
+
+        #region "Incoming Queue Setup"
+
+        #region "MS incoming queue setup scripts"
+
+        private const string MS_CREATE_INCOMING_SEQUENCE_SCRIPT =
+            "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetIncomingQueueSequence') " +
+            "BEGIN CREATE SEQUENCE DaJetIncomingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
+
+        private const string MS_DROP_INCOMING_TRIGGER_SCRIPT =
+            "IF OBJECT_ID('DaJetIncomingQueue_INSTEAD_OF_INSERT', 'TR') IS NOT NULL " +
+            "BEGIN DROP TRIGGER DaJetIncomingQueue_INSTEAD_OF_INSERT; END;";
+
+        private const string MS_CREATE_INCOMING_TRIGGER_SCRIPT =
+            "CREATE TRIGGER DaJetIncomingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME} INSTEAD OF INSERT NOT FOR REPLICATION AS " +
+            "INSERT {TABLE_NAME} " +
+            "({МоментВремени}, {Идентификатор}, {Отправитель}, {ТипОперации}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ОписаниеОшибки}, {КоличествоОшибок}) " +
+            "SELECT NEXT VALUE FOR DaJetIncomingQueueSequence, " +
+            "i.{Идентификатор}, i.{Отправитель}, i.{ТипОперации}, i.{ТипСообщения}, i.{ТелоСообщения}, i.{ДатаВремя}, i.{ОписаниеОшибки}, i.{КоличествоОшибок} " +
+            "FROM inserted AS i;";
+
+        private const string MS_ENABLE_INCOMING_TRIGGER_SCRIPT = "ENABLE TRIGGER DaJetIncomingQueue_INSTEAD_OF_INSERT ON {TABLE_NAME};";
+
+        private const string MS_ENUMERATE_INCOMING_QUEUE_SCRIPT =
+            "SELECT {МоментВремени} AS [МоментВремени], {Идентификатор} AS [Идентификатор], " +
+            "NEXT VALUE FOR DaJetIncomingQueueSequence OVER(ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) AS [НомерСообщения] " +
+            "INTO #{TABLE_NAME}_EnumCopy " +
+            "FROM {TABLE_NAME} WITH (TABLOCKX, HOLDLOCK); " +
+            "UPDATE T SET T.{МоментВремени} = C.[НомерСообщения] FROM {TABLE_NAME} AS T " +
+            "INNER JOIN #{TABLE_NAME}_EnumCopy AS C ON T.{МоментВремени} = C.[МоментВремени] AND T.{Идентификатор} = C.[Идентификатор];";
+
+        private const string MS_DROP_INCOMING_ENUMERATION_TABLE = "DROP TABLE #{TABLE_NAME}_EnumCopy;";
+
+        #endregion
+
+        #region "PG incoming queue setup scripts"
+
+        private const string PG_CREATE_INCOMING_SEQUENCE_SCRIPT =
+            "CREATE SEQUENCE IF NOT EXISTS DaJetIncomingQueueSequence AS bigint INCREMENT BY 1 START WITH 1 CACHE 1;";
+
+        private const string PG_ENUMERATE_INCOMING_QUEUE_SCRIPT =
+            "LOCK TABLE {TABLE_NAME} IN ACCESS EXCLUSIVE MODE; " +
+            "WITH cte AS (SELECT {МоментВремени}, {Идентификатор}, nextval('DaJetIncomingQueueSequence') AS msgno " +
+            "FROM {TABLE_NAME} ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) " +
+            "UPDATE {TABLE_NAME} SET {МоментВремени} = CAST(cte.msgno AS numeric(19, 0)) " +
+            "FROM cte WHERE {TABLE_NAME}.{МоментВремени} = cte.{МоментВремени} AND {TABLE_NAME}.{Идентификатор} = cte.{Идентификатор};";
+
+        private const string PG_CREATE_INCOMING_FUNCTION_SCRIPT =
+            "CREATE OR REPLACE FUNCTION DaJetIncomingQueue_before_insert_function() RETURNS trigger AS $$ BEGIN " +
+            "NEW.{МоментВремени} := CAST(nextval('DaJetIncomingQueueSequence') AS numeric(19,0)); RETURN NEW; END $$ LANGUAGE 'plpgsql';";
+
+        private const string PG_DROP_INCOMING_TRIGGER_SCRIPT = "DROP TRIGGER IF EXISTS DaJetIncomingQueue_before_insert_trigger ON {TABLE_NAME};";
+
+        private const string PG_CREATE_INCOMING_TRIGGER_SCRIPT =
+            "CREATE TRIGGER DaJetIncomingQueue_before_insert_trigger BEFORE INSERT ON {TABLE_NAME} FOR EACH ROW " +
+            "EXECUTE PROCEDURE DaJetIncomingQueue_before_insert_function();";
+
+        #endregion
+
+        public void ConfigureIncomingQueue(ApplicationObject queue)
+        {
+            Type template = typeof(DatabaseIncomingMessage);
+
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                MS_ConfigureIncomingQueue(queue, template);
+            }
+            else
+            {
+                PG_ConfigureIncomingQueue(queue, template);
+            }
+        }
+        private void MS_ConfigureIncomingQueue(ApplicationObject queue, Type template)
+        {
+            ExecuteNonQuery(MS_CREATE_INCOMING_SEQUENCE_SCRIPT);
+
+            List<string> scripts = new List<string>();
+            scripts.Add(ConfigureDatabaseScript(MS_ENUMERATE_INCOMING_QUEUE_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_DROP_INCOMING_ENUMERATION_TABLE, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_DROP_INCOMING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_CREATE_INCOMING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(MS_ENABLE_INCOMING_TRIGGER_SCRIPT, template, queue));
+
+            TxExecuteNonQuery(scripts);
+        }
+        private void PG_ConfigureIncomingQueue(ApplicationObject queue, Type template)
+        {
+            ExecuteNonQuery(PG_CREATE_INCOMING_SEQUENCE_SCRIPT);
+
+            List<string> scripts = new List<string>();
+            scripts.Add(ConfigureDatabaseScript(PG_ENUMERATE_INCOMING_QUEUE_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_CREATE_INCOMING_FUNCTION_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_DROP_INCOMING_TRIGGER_SCRIPT, template, queue));
+            scripts.Add(ConfigureDatabaseScript(PG_CREATE_INCOMING_TRIGGER_SCRIPT, template, queue));
 
             TxExecuteNonQuery(scripts);
         }
