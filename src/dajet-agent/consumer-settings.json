@@ -1,8 +1,8 @@
 ﻿{
-  "CriticalErrorDelay": 300,
+  "CriticalErrorDelay": 30,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet_agent;Integrated Security=True",
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True",
     "DatabaseQueue": {
       "TableName": "_InfoRg58",
       "ObjectName": "РегистрСведений.ВходящаяОчередьRabbitMQ",

@@ -37,7 +37,14 @@ namespace DaJet.Utilities
         {
             lock (_syncLog)
             {
-                LogSyncronized(text);
+                try
+                {
+                    LogSyncronized(text);
+                }
+                catch (Exception error)
+                {
+                    // log file access error - just ignore this exception
+                }
             }
         }
         private static void LogSyncronized(string text)
