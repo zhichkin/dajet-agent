@@ -20,6 +20,10 @@ namespace DaJet.Database.Setup
 
         public static int Main(string[] args)
         {
+            //args = new string[] { "--ms", "zhichkin", "--db", "cerberus" };
+            //args = new string[] { "--ms", "zhichkin", "--db", "test_node_1" };
+            //args = new string[] { "--pg", "127.0.0.1", "--db", "test_node_2", "--usr", "postgres", "--pwd", "postgres" };
+
             RootCommand command = new RootCommand()
             {
                 new Option<string>("--ms", "Microsoft SQL Server address or name"),
@@ -206,7 +210,14 @@ namespace DaJet.Database.Setup
 
             try
             {
-                DbConfigurator.ConfigureIncomingQueue(queue);
+                if (DbConfigurator.IncomingQueueSequenceExists())
+                {
+                    DbConfigurator.DropIncomingQueueTrigger(queue);
+                }
+                else
+                {
+                    DbConfigurator.ConfigureIncomingQueue(queue);
+                }
                 ShowSuccessMessage($"Incoming queue \"{table.Name}\" [{queue.TableName}] configured successfully.");
             }
             catch (Exception error)

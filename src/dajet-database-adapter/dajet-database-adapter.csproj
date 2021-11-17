@@ -14,6 +14,7 @@ Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
     <PackageReleaseNotes>The 1C:Enterprise 8 database adapter provides the producing and consuming of messages from the 1C information registers configured for use as incoming and outgoing message queues.</PackageReleaseNotes>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -18,7 +18,12 @@ namespace DaJet.Database.Adapter
         DatabaseProvider DatabaseProvider { get; }
         IDatabaseConfigurator UseConnectionString(string connectionString);
         IDatabaseConfigurator UseDatabaseProvider(DatabaseProvider databaseProvider);
+        void DropIncomingQueueSequence();
+        bool IncomingQueueSequenceExists();
+        void DropIncomingQueueTrigger(ApplicationObject queue);
         void ConfigureIncomingQueue(ApplicationObject queue);
+        void DropOutgoingQueueSequence();
+        bool OutgoingQueueSequenceExists();
         void ConfigureOutgoingQueue(ApplicationObject queue);
         ApplicationObject FindMetadataObjectByName(InfoBase infoBase, string metadataName);
     }
@@ -96,6 +101,25 @@ namespace DaJet.Database.Adapter
                 return new SqlConnection(ConnectionString);
             }
             return new NpgsqlConnection(ConnectionString);
+        }
+        private T ExecuteScalar<T>(string script)
+        {
+            T result = default(T);
+            using (DbConnection connection = GetDbConnection())
+            using (DbCommand command = connection.CreateCommand())
+            {
+                command.CommandType = CommandType.Text;
+                command.CommandTimeout = 10; // seconds
+                command.CommandText = script;
+                
+                connection.Open();
+                object value = command.ExecuteScalar();
+                if (value != null)
+                {
+                    result = (T)value;
+                }
+            }
+            return result;
         }
         private void ExecuteNonQuery(string script)
         {
@@ -176,6 +200,12 @@ namespace DaJet.Database.Adapter
 
         #region "MS outgoing queue setup scripts"
 
+        private const string MS_OUTGOING_SEQUENCE_EXISTS_SCRIPT = "SELECT 1 FROM sys.sequences WHERE name = 'DaJetOutgoingQueueSequence';";
+
+        private const string MS_DROP_OUTGOING_SEQUENCE_SCRIPT =
+            "IF EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetOutgoingQueueSequence') " +
+            "BEGIN DROP SEQUENCE DaJetOutgoingQueueSequence; END;";
+
         private const string MS_CREATE_OUTGOING_SEQUENCE_SCRIPT =
             "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = 'DaJetOutgoingQueueSequence') " +
             "BEGIN CREATE SEQUENCE DaJetOutgoingQueueSequence AS numeric(19,0) START WITH 1 INCREMENT BY 1; END;";
@@ -208,6 +238,11 @@ namespace DaJet.Database.Adapter
 
         #region "PG outgoing queue setup scripts"
 
+        private const string PG_OUTGOING_SEQUENCE_EXISTS_SCRIPT =
+            "SELECT 1 FROM information_schema.sequences WHERE LOWER(sequence_name) = LOWER('DaJetOutgoingQueueSequence');";
+
+        private const string PG_DROP_OUTGOING_SEQUENCE_SCRIPT = "DROP SEQUENCE IF EXISTS DaJetOutgoingQueueSequence;";
+
         private const string PG_CREATE_OUTGOING_SEQUENCE_SCRIPT =
             "CREATE SEQUENCE IF NOT EXISTS DaJetOutgoingQueueSequence AS bigint INCREMENT BY 1 START WITH 1 CACHE 1;";
 
@@ -230,6 +265,40 @@ namespace DaJet.Database.Adapter
 
         #endregion
 
+        public bool OutgoingQueueSequenceExists()
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                return MS_OutgoingQueueSequenceExists();
+            }
+            else
+            {
+                return PG_OutgoingQueueSequenceExists();
+            }
+        }
+        private bool MS_OutgoingQueueSequenceExists()
+        {
+            int result = ExecuteScalar<int>(MS_OUTGOING_SEQUENCE_EXISTS_SCRIPT);
+            return (result == 1);
+        }
+        private bool PG_OutgoingQueueSequenceExists()
+        {
+            int result = ExecuteScalar<int>(PG_OUTGOING_SEQUENCE_EXISTS_SCRIPT);
+            return (result == 1);
+        }
+
+        public void DropOutgoingQueueSequence()
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                ExecuteNonQuery(MS_DROP_OUTGOING_SEQUENCE_SCRIPT);
+            }
+            else
+            {
+                ExecuteNonQuery(PG_DROP_OUTGOING_SEQUENCE_SCRIPT);
+            }
+        }
+
         public void ConfigureOutgoingQueue(ApplicationObject queue)
         {
             Type template = typeof(DatabaseOutgoingMessage);
@@ -245,9 +314,9 @@ namespace DaJet.Database.Adapter
         }
         private void MS_ConfigureOutgoingQueue(ApplicationObject queue, Type template)
         {
-            ExecuteNonQuery(MS_CREATE_OUTGOING_SEQUENCE_SCRIPT);
-
             List<string> scripts = new List<string>();
+
+            scripts.Add(MS_CREATE_OUTGOING_SEQUENCE_SCRIPT);
             scripts.Add(ConfigureDatabaseScript(MS_ENUMERATE_OUTGOING_QUEUE_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_ENUMERATION_TABLE, template, queue));
             scripts.Add(ConfigureDatabaseScript(MS_DROP_OUTGOING_TRIGGER_SCRIPT, template, queue));
@@ -258,9 +327,9 @@ namespace DaJet.Database.Adapter
         }
         private void PG_ConfigureOutgoingQueue(ApplicationObject queue, Type template)
         {
-            ExecuteNonQuery(PG_CREATE_OUTGOING_SEQUENCE_SCRIPT);
-
             List<string> scripts = new List<string>();
+
+            scripts.Add(PG_CREATE_OUTGOING_SEQUENCE_SCRIPT);
             scripts.Add(ConfigureDatabaseScript(PG_ENUMERATE_OUTGOING_QUEUE_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(PG_CREATE_OUTGOING_FUNCTION_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(PG_DROP_OUTGOING_TRIGGER_SCRIPT, template, queue));
@@ -274,6 +343,12 @@ namespace DaJet.Database.Adapter
         #region "Incoming Queue Setup"
 
         #region "MS incoming queue setup scripts"
+
+        private const string MS_INCOMING_SEQUENCE_EXISTS_SCRIPT = "SELECT 1 FROM sys.sequences WHERE name = 'DaJetIncomingQueueSequence';";
+
+        private const string MS_DROP_INCOMING_SEQUENCE_SCRIPT =
+            "IF EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetIncomingQueueSequence') " +
+            "BEGIN DROP SEQUENCE DaJetIncomingQueueSequence; END;";
 
         private const string MS_CREATE_INCOMING_SEQUENCE_SCRIPT =
             "IF NOT EXISTS(SELECT 1 FROM sys.sequences WHERE name = N'DaJetIncomingQueueSequence') " +
@@ -307,6 +382,11 @@ namespace DaJet.Database.Adapter
 
         #region "PG incoming queue setup scripts"
 
+        private const string PG_INCOMING_SEQUENCE_EXISTS_SCRIPT =
+            "SELECT 1 FROM information_schema.sequences WHERE LOWER(sequence_name) = LOWER('DaJetIncomingQueueSequence');";
+
+        private const string PG_DROP_INCOMING_SEQUENCE_SCRIPT = "DROP SEQUENCE IF EXISTS DaJetIncomingQueueSequence;";
+
         private const string PG_CREATE_INCOMING_SEQUENCE_SCRIPT =
             "CREATE SEQUENCE IF NOT EXISTS DaJetIncomingQueueSequence AS bigint INCREMENT BY 1 START WITH 1 CACHE 1;";
 
@@ -316,6 +396,8 @@ namespace DaJet.Database.Adapter
             "FROM {TABLE_NAME} ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) " +
             "UPDATE {TABLE_NAME} SET {МоментВремени} = CAST(cte.msgno AS numeric(19, 0)) " +
             "FROM cte WHERE {TABLE_NAME}.{МоментВремени} = cte.{МоментВремени} AND {TABLE_NAME}.{Идентификатор} = cte.{Идентификатор};";
+
+        private const string PG_DROP_INCOMING_FUNCTION_SCRIPT = "DROP FUNCTION IF EXISTS DaJetIncomingQueue_before_insert_function;";
 
         private const string PG_CREATE_INCOMING_FUNCTION_SCRIPT =
             "CREATE OR REPLACE FUNCTION DaJetIncomingQueue_before_insert_function() RETURNS trigger AS $$ BEGIN " +
@@ -328,6 +410,53 @@ namespace DaJet.Database.Adapter
             "EXECUTE PROCEDURE DaJetIncomingQueue_before_insert_function();";
 
         #endregion
+
+        public bool IncomingQueueSequenceExists()
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                return MS_IncomingQueueSequenceExists();
+            }
+            else
+            {
+                return PG_IncomingQueueSequenceExists();
+            }
+        }
+        private bool MS_IncomingQueueSequenceExists()
+        {
+            int result = ExecuteScalar<int>(MS_INCOMING_SEQUENCE_EXISTS_SCRIPT);
+            return (result == 1);
+        }
+        private bool PG_IncomingQueueSequenceExists()
+        {
+            int result = ExecuteScalar<int>(PG_INCOMING_SEQUENCE_EXISTS_SCRIPT);
+            return (result == 1);
+        }
+
+        public void DropIncomingQueueSequence()
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                ExecuteNonQuery(MS_DROP_INCOMING_SEQUENCE_SCRIPT);
+            }
+            else
+            {
+                ExecuteNonQuery(PG_DROP_INCOMING_SEQUENCE_SCRIPT);
+            }
+        }
+
+        public void DropIncomingQueueTrigger(ApplicationObject queue)
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                ExecuteNonQuery(MS_DROP_INCOMING_TRIGGER_SCRIPT);
+            }
+            else
+            {
+                ExecuteNonQuery(ConfigureDatabaseScript(PG_DROP_INCOMING_TRIGGER_SCRIPT, typeof(DatabaseIncomingMessage), queue));
+                ExecuteNonQuery(PG_DROP_INCOMING_FUNCTION_SCRIPT);
+            }
+        }
 
         public void ConfigureIncomingQueue(ApplicationObject queue)
         {
@@ -344,26 +473,20 @@ namespace DaJet.Database.Adapter
         }
         private void MS_ConfigureIncomingQueue(ApplicationObject queue, Type template)
         {
-            ExecuteNonQuery(MS_CREATE_INCOMING_SEQUENCE_SCRIPT);
-
             List<string> scripts = new List<string>();
+
+            scripts.Add(MS_CREATE_INCOMING_SEQUENCE_SCRIPT);
             scripts.Add(ConfigureDatabaseScript(MS_ENUMERATE_INCOMING_QUEUE_SCRIPT, template, queue));
             scripts.Add(ConfigureDatabaseScript(MS_DROP_INCOMING_ENUMERATION_TABLE, template, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_DROP_INCOMING_TRIGGER_SCRIPT, template, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_CREATE_INCOMING_TRIGGER_SCRIPT, template, queue));
-            scripts.Add(ConfigureDatabaseScript(MS_ENABLE_INCOMING_TRIGGER_SCRIPT, template, queue));
 
             TxExecuteNonQuery(scripts);
         }
         private void PG_ConfigureIncomingQueue(ApplicationObject queue, Type template)
         {
-            ExecuteNonQuery(PG_CREATE_INCOMING_SEQUENCE_SCRIPT);
-
             List<string> scripts = new List<string>();
+
+            scripts.Add(PG_CREATE_INCOMING_SEQUENCE_SCRIPT);
             scripts.Add(ConfigureDatabaseScript(PG_ENUMERATE_INCOMING_QUEUE_SCRIPT, template, queue));
-            scripts.Add(ConfigureDatabaseScript(PG_CREATE_INCOMING_FUNCTION_SCRIPT, template, queue));
-            scripts.Add(ConfigureDatabaseScript(PG_DROP_INCOMING_TRIGGER_SCRIPT, template, queue));
-            scripts.Add(ConfigureDatabaseScript(PG_CREATE_INCOMING_TRIGGER_SCRIPT, template, queue));
 
             TxExecuteNonQuery(scripts);
         }
