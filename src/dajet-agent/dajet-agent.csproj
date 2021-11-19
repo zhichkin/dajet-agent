@@ -5,7 +5,7 @@
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
-    <Version>4.1.2</Version>
+    <Version>5.0.0</Version>
     <Authors>Zhichkin</Authors>
     <Description>1C:Enterprise 8 database RabbitMQ adapter.
 Both Microsoft SQL Server and PostgreSQL are supported.</Description>
@@ -13,9 +13,8 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
-    <PackageReleaseNotes>Unaccessible log file critical bug fix:
-the host service keeps running, when the log file is not accessible,
-while consumer and producer background services are shutdown.</PackageReleaseNotes>
+    <PackageReleaseNotes>1. Added DaJet.Database.Adapter package to configure the incoming and outgoing queue database objects at service startup. Database objects are sequences and insert triggers, that use those sequences.
+2. The DatabaseQueue setting has been removed for both consumer and publisher services. The database schema for outgoing and incoming queues is now read from 1C metadata using the DaJet.Metadata package.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

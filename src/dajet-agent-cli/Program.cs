@@ -147,24 +147,8 @@ namespace DaJet.Agent.CLI
             settings.DatabaseSettings = new Consumer.DatabaseSettings()
             {
                 DatabaseProvider = metadataService.DatabaseProvider,
-                ConnectionString = metadataService.ConnectionString,
-                DatabaseQueue = new Consumer.DatabaseQueue()
-                {
-                    TableName = metaObject.TableName,
-                    ObjectName = string.Format("{0}.{1}", METAOBJECT_BASE_NAME, CONSUMER_TABLE_QUEUE_NAME)
-                }
+                ConnectionString = metadataService.ConnectionString
             };
-            foreach (MetadataProperty property in metaObject.Properties)
-            {
-                foreach (DatabaseField field in property.Fields)
-                {
-                    settings.DatabaseSettings.DatabaseQueue.Fields.Add(new Consumer.TableField()
-                    {
-                        Name = field.Name,
-                        Property = property.Name
-                    });
-                }
-            }
 
             return settings;
         }
@@ -199,24 +183,8 @@ namespace DaJet.Agent.CLI
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
                 DatabaseProvider = metadataService.DatabaseProvider,
-                ConnectionString = metadataService.ConnectionString,
-                DatabaseQueue = new Producer.DatabaseQueue()
-                {
-                    TableName = metaObject.TableName,
-                    ObjectName = string.Format("{0}.{1}", METAOBJECT_BASE_NAME, PRODUCER_TABLE_QUEUE_NAME)
-                }
+                ConnectionString = metadataService.ConnectionString
             };
-            foreach (MetadataProperty property in metaObject.Properties)
-            {
-                foreach (DatabaseField field in property.Fields)
-                {
-                    settings.DatabaseSettings.DatabaseQueue.Fields.Add(new Producer.TableField()
-                    {
-                        Name = field.Name,
-                        Property = property.Name
-                    });
-                }
-            }
 
             return settings;
         }

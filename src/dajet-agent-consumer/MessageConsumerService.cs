@@ -1,4 +1,6 @@
+using DaJet.Database.Adapter;
 using DaJet.Metadata;
+using DaJet.Metadata.Model;
 using DaJet.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -25,6 +27,16 @@ namespace DaJet.Agent.Consumer
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
+            try
+            {
+                ValidateAndConfigureDatabaseInterface();
+            }
+            catch (Exception error)
+            {
+                FileLogger.Log(LOG_TOKEN, "Message consumer service failed to start:\n" + ExceptionHelper.GetErrorText(error));
+                return Task.CompletedTask;
+            }
+
             FileLogger.Log(LOG_TOKEN, "Message consumer service is started.");
             return base.StartAsync(cancellationToken);
         }
@@ -81,6 +93,35 @@ namespace DaJet.Agent.Consumer
                 {
                     await Task.Delay(180000, stoppingToken);
                 }
+            }
+        }
+
+        private void ValidateAndConfigureDatabaseInterface()
+        {
+            IDatabaseConfigurator configurator = Services.GetService<IDatabaseConfigurator>();
+            configurator
+                .UseDatabaseProvider(Settings.DatabaseSettings.DatabaseProvider)
+                .UseConnectionString(Settings.DatabaseSettings.ConnectionString);
+
+            if (!configurator.TryOpenInfoBase(out InfoBase infoBase, out string errorMessage))
+            {
+                throw new Exception($"Failed to load 1C metadata:\n{errorMessage}");
+            }
+
+            ApplicationObject queue = configurator.GetIncomingQueueMetadata(infoBase);
+            if (queue == null)
+            {
+                throw new Exception($"Failed to load 1C metadata for the incoming queue.");
+            }
+
+            if (configurator.IncomingQueueSequenceExists())
+            {
+                // Version 5.0.0. TODO: Remove in future versions!
+                configurator.DropIncomingQueueTrigger(queue);
+            }
+            else
+            {
+                configurator.ConfigureIncomingQueue(queue);
             }
         }
     }

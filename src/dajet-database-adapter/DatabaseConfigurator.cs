@@ -18,6 +18,11 @@ namespace DaJet.Database.Adapter
         DatabaseProvider DatabaseProvider { get; }
         IDatabaseConfigurator UseConnectionString(string connectionString);
         IDatabaseConfigurator UseDatabaseProvider(DatabaseProvider databaseProvider);
+        bool TryOpenInfoBase(out InfoBase infoBase, out string errorMessage);
+        ApplicationObject GetIncomingQueueMetadata(InfoBase infoBase);
+        ApplicationObject GetOutgoingQueueMetadata(InfoBase infoBase);
+        string IncomingQueueInsertScript { get; }
+        string OutgoingQueueSelectScript { get; }
         void DropIncomingQueueSequence();
         bool IncomingQueueSequenceExists();
         void DropIncomingQueueTrigger(ApplicationObject queue);
@@ -42,6 +47,26 @@ namespace DaJet.Database.Adapter
             return this;
         }
 
+        public bool TryOpenInfoBase(out InfoBase infoBase, out string errorMessage)
+        {
+            IMetadataService metadataService = new MetadataService()
+                .UseDatabaseProvider(DatabaseProvider)
+                .UseConnectionString(ConnectionString);
+
+            errorMessage = string.Empty;
+
+            try
+            {
+                infoBase = metadataService.OpenInfoBase();
+            }
+            catch (Exception error)
+            {
+                infoBase = null;
+                errorMessage = ExceptionHelper.GetErrorText(error);
+            }
+
+            return (errorMessage == string.Empty);
+        }
         public ApplicationObject FindMetadataObjectByName(InfoBase infoBase, string metadataName)
         {
             string[] names = metadataName.Split('.', StringSplitOptions.RemoveEmptyEntries);
@@ -92,6 +117,73 @@ namespace DaJet.Database.Adapter
                 }
             }
             return null;
+        }
+
+        public ApplicationObject GetIncomingQueueMetadata(InfoBase infoBase)
+        {
+            Type template = typeof(DatabaseIncomingMessage);
+
+            TableAttribute table = template.GetCustomAttribute<TableAttribute>();
+            if (table == null || string.IsNullOrWhiteSpace(table.Name))
+            {
+                //ShowErrorMessage($"TableAttribute is not defined for template type \"{template.FullName}\".");
+                return null;
+            }
+
+            ApplicationObject queue = FindMetadataObjectByName(infoBase, table.Name);
+            if (queue == null)
+            {
+                //ShowErrorMessage($"Metadata object \"{table.Name}\" is not found.");
+                return null;
+            }
+
+            IDatabaseInterfaceValidator validator = new DatabaseInterfaceValidator();
+            if (!validator.IncomingInterfaceIsValid(queue, out List<string> errors))
+            {
+                //ShowErrorMessage($"{table.Name}");
+                //foreach (string error in errors)
+                //{
+                //    ShowErrorMessage(error);
+                //}
+                return null;
+            }
+
+            BuildIncomingQueueInsertScript(queue, template);
+
+            return queue;
+        }
+        public ApplicationObject GetOutgoingQueueMetadata(InfoBase infoBase)
+        {
+            Type template = typeof(DatabaseOutgoingMessage);
+
+            TableAttribute table = template.GetCustomAttribute<TableAttribute>();
+            if (table == null || string.IsNullOrWhiteSpace(table.Name))
+            {
+                //ShowErrorMessage($"TableAttribute is not defined for template type \"{template.FullName}\".");
+                return null;
+            }
+
+            ApplicationObject queue = FindMetadataObjectByName(infoBase, table.Name);
+            if (queue == null)
+            {
+                //ShowErrorMessage($"Metadata object \"{table.Name}\" is not found.");
+                return null;
+            }
+
+            IDatabaseInterfaceValidator validator = new DatabaseInterfaceValidator();
+            if (!validator.OutgoingInterfaceIsValid(queue, out List<string> errors))
+            {
+                //ShowErrorMessage($"{table.Name}");
+                //foreach (string error in errors)
+                //{
+                //    ShowErrorMessage(error);
+                //}
+                return null;
+            }
+
+            BuildOutgoingQueueSelectScript(queue, template, 1000);
+
+            return queue;
         }
 
         private DbConnection GetDbConnection()
@@ -489,6 +581,106 @@ namespace DaJet.Database.Adapter
             scripts.Add(ConfigureDatabaseScript(PG_ENUMERATE_INCOMING_QUEUE_SCRIPT, template, queue));
 
             TxExecuteNonQuery(scripts);
+        }
+
+        #endregion
+
+        #region "Incoming Queue Scripts"
+
+        private const string MS_INCOMING_QUEUE_INSERT_SCRIPT_TEMPLATE =
+            "INSERT {TABLE_NAME} " +
+            "({МоментВремени}, {Идентификатор}, {Отправитель}, {ТипОперации}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ОписаниеОшибки}, {КоличествоОшибок}) " +
+            "SELECT NEXT VALUE FOR DaJetIncomingQueueSequence, " +
+            "@Идентификатор, @Отправитель, @ТипОперации, @ТипСообщения, @ТелоСообщения, @ДатаВремя, @ОписаниеОшибки, @КоличествоОшибок;";
+
+        private const string PG_INCOMING_QUEUE_INSERT_SCRIPT_TEMPLATE =
+            "INSERT INTO {TABLE_NAME} " +
+            "({МоментВремени}, {Идентификатор}, {Отправитель}, {ТипОперации}, {ТипСообщения}, {ТелоСообщения}, {ДатаВремя}, {ОписаниеОшибки}, {КоличествоОшибок}) " +
+            "SELECT CAST(nextval('DaJetIncomingQueueSequence') AS numeric(19,0)), " +
+            "@Идентификатор, CAST(@Отправитель AS mvarchar), CAST(@ТипОперации AS mvarchar), CAST(@ТипСообщения AS mvarchar), " +
+            "CAST(@ТелоСообщения AS mvarchar), @ДатаВремя, CAST(@ОписаниеОшибки AS mvarchar), @КоличествоОшибок;";
+
+        private string MS_INCOMING_QUEUE_INSERT_SCRIPT = string.Empty;
+        private string PG_INCOMING_QUEUE_INSERT_SCRIPT = string.Empty;
+        public string IncomingQueueInsertScript
+        {
+            get
+            {
+                if (DatabaseProvider == DatabaseProvider.SQLServer)
+                {
+                    return MS_INCOMING_QUEUE_INSERT_SCRIPT;
+                }
+                else
+                {
+                    return PG_INCOMING_QUEUE_INSERT_SCRIPT;
+                }
+            }
+        }
+        private void BuildIncomingQueueInsertScript(ApplicationObject queue, Type template)
+        {
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                MS_INCOMING_QUEUE_INSERT_SCRIPT = ConfigureDatabaseScript(MS_INCOMING_QUEUE_INSERT_SCRIPT_TEMPLATE, template, queue);
+            }
+            else
+            {
+                PG_INCOMING_QUEUE_INSERT_SCRIPT = ConfigureDatabaseScript(PG_INCOMING_QUEUE_INSERT_SCRIPT_TEMPLATE, template, queue);
+            }
+        }
+
+        #endregion
+
+        #region "Outgoing Queue Scripts"
+
+        private const string MS_OUTGOING_QUEUE_SELECT_SCRIPT_TEMPLATE =
+            "WITH cte AS (SELECT TOP ({MESSAGE_COUNT}) " +
+            "{МоментВремени} AS [МоментВремени], {Идентификатор} AS [Идентификатор], {ДатаВремя} AS [ДатаВремя], {Отправитель} AS [Отправитель], " +
+            "{Получатели} AS [Получатели], {ТипОперации} AS [ТипОперации], {ТипСообщения} AS [ТипСообщения], {ТелоСообщения} AS [ТелоСообщения] " +
+            "FROM {TABLE_NAME} WITH (ROWLOCK, READPAST) ORDER BY {МоментВремени} ASC, {Идентификатор} ASC) " +
+            "DELETE cte OUTPUT deleted.[МоментВремени], deleted.[Идентификатор], deleted.[ДатаВремя], deleted.[Отправитель], " +
+            "deleted.[Получатели], deleted.[ТипОперации], deleted.[ТипСообщения], deleted.[ТелоСообщения];";
+
+        private const string PG_OUTGOING_QUEUE_SELECT_SCRIPT_TEMPLATE =
+            "WITH cte AS (SELECT {МоментВремени}, {Идентификатор} FROM {TABLE_NAME} ORDER BY {МоментВремени} ASC, {Идентификатор} ASC LIMIT {MESSAGE_COUNT}) " +
+            "DELETE FROM {TABLE_NAME} t USING cte WHERE t.{МоментВремени} = cte.{МоментВремени} AND t.{Идентификатор} = cte.{Идентификатор} " +
+            "RETURNING t.{МоментВремени} AS \"МоментВремени\", t.{Идентификатор} AS \"Идентификатор\", " +
+            "t.{ДатаВремя} AS \"ДатаВремя\", CAST(t.{Отправитель} AS varchar) AS \"Отправитель\", " +
+            "CAST(t.{Получатели} AS varchar) AS \"Получатели\", CAST(t.{ТипОперации} AS varchar) AS \"ТипОперации\", " +
+            "CAST(t.{ТипСообщения} AS varchar) AS \"ТипСообщения\", CAST(t.{ТелоСообщения} AS text) AS \"ТелоСообщения\";";
+
+        private string MS_OUTGOING_QUEUE_SELECT_SCRIPT = string.Empty;
+        private string PG_OUTGOING_QUEUE_SELECT_SCRIPT = string.Empty;
+        public string OutgoingQueueSelectScript
+        {
+            get
+            {
+                if (DatabaseProvider == DatabaseProvider.SQLServer)
+                {
+                    return MS_OUTGOING_QUEUE_SELECT_SCRIPT;
+                }
+                else
+                {
+                    return PG_OUTGOING_QUEUE_SELECT_SCRIPT;
+                }
+            }
+        }
+        private void BuildOutgoingQueueSelectScript(ApplicationObject queue, Type template, int messageCount)
+        {
+            if (messageCount == 0)
+            {
+                messageCount = 1000;
+            }
+
+            if (DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                MS_OUTGOING_QUEUE_SELECT_SCRIPT = ConfigureDatabaseScript(MS_OUTGOING_QUEUE_SELECT_SCRIPT_TEMPLATE, template, queue);
+                MS_OUTGOING_QUEUE_SELECT_SCRIPT = MS_OUTGOING_QUEUE_SELECT_SCRIPT.Replace("{MESSAGE_COUNT}", messageCount.ToString());
+            }
+            else
+            {
+                PG_OUTGOING_QUEUE_SELECT_SCRIPT = ConfigureDatabaseScript(PG_OUTGOING_QUEUE_SELECT_SCRIPT_TEMPLATE, template, queue);
+                PG_OUTGOING_QUEUE_SELECT_SCRIPT = PG_OUTGOING_QUEUE_SELECT_SCRIPT.Replace("{MESSAGE_COUNT}", messageCount.ToString());
+            }
         }
 
         #endregion

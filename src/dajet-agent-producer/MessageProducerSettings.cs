@@ -18,7 +18,6 @@ namespace DaJet.Agent.Producer
         public bool UseNotifications { get; set; } = false;
         public string NotificationQueueName { get; set; } = "dajet-agent-export-queue";
         public int WaitForNotificationTimeout { get; set; } = 180; // seconds
-        public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }
     public sealed class MessageBrokerSettings
     {

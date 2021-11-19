@@ -1,13 +1,13 @@
-﻿using DaJet.Metadata;
+﻿using DaJet.Database.Adapter;
+using DaJet.Metadata;
 using DaJet.Utilities;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Text;
 
 namespace DaJet.Agent.Consumer
 {
@@ -21,10 +21,13 @@ namespace DaJet.Agent.Consumer
         private const string LOG_TOKEN = "P-DB";
         private IServiceProvider Services { get; set; }
         private MessageConsumerSettings Settings { get; set; }
+        private string IncomingQueueInsertScript { get; set; }
         public DatabaseMessageProducer(IServiceProvider serviceProvider, IOptions<MessageConsumerSettings> options)
         {
             Settings = options.Value;
             Services = serviceProvider;
+            IDatabaseConfigurator configurator = Services.GetService<IDatabaseConfigurator>();
+            IncomingQueueInsertScript = configurator.IncomingQueueInsertScript;
         }
         private void DisposeDatabaseResources(DbConnection connection, DbDataReader reader, DbCommand command)
         {
@@ -69,7 +72,7 @@ namespace DaJet.Agent.Consumer
             {
                 try
                 {
-                    return SQLServer_InsertMessage(message);
+                    return MS_InsertMessage(message);
                 }
                 catch (Exception error)
                 {
@@ -77,84 +80,50 @@ namespace DaJet.Agent.Consumer
                     return false;
                 }
             }
-            return PostgreSQL_InsertMessage(message);
+            return PG_InsertMessage(message);
         }
-
-        #region "Microsoft SQL Server"
-
-        public bool SQLServer_InsertMessage(DatabaseMessage message)
+        public bool MS_InsertMessage(DatabaseMessage message)
         {
             int recordsAffected = 0;
             using(SqlConnection connection = new SqlConnection(Settings.DatabaseSettings.ConnectionString))
             using (SqlCommand command = connection.CreateCommand())
             {
                 command.CommandType = CommandType.Text;
-                command.CommandText = SQLServer_InsertMessageScript();
+                command.CommandText = IncomingQueueInsertScript;
                 command.CommandTimeout = 60; // seconds
 
-                command.Parameters.AddWithValue("p1", message.Code);
-                command.Parameters.AddWithValue("p2", message.Uuid);
-                command.Parameters.AddWithValue("p3", message.DateTimeStamp);
-                command.Parameters.AddWithValue("p4", message.Sender);
-                command.Parameters.AddWithValue("p5", message.OperationType);
-                command.Parameters.AddWithValue("p6", message.MessageType);
-                command.Parameters.AddWithValue("p7", message.MessageBody);
-                command.Parameters.AddWithValue("p8", message.ErrorCount);
-                command.Parameters.AddWithValue("p9", message.ErrorDescription);
+                command.Parameters.AddWithValue("Идентификатор", message.Uuid);
+                command.Parameters.AddWithValue("ДатаВремя", message.DateTimeStamp);
+                command.Parameters.AddWithValue("Отправитель", message.Sender);
+                command.Parameters.AddWithValue("ТипОперации", message.OperationType);
+                command.Parameters.AddWithValue("ТипСообщения", message.MessageType);
+                command.Parameters.AddWithValue("ТелоСообщения", message.MessageBody);
+                command.Parameters.AddWithValue("КоличествоОшибок", message.ErrorCount);
+                command.Parameters.AddWithValue("ОписаниеОшибки", message.ErrorDescription);
 
                 connection.Open();
                 recordsAffected = command.ExecuteNonQuery();
-
-                command.Parameters.Clear(); // clear memory referenced by parameters !
             }
             return (recordsAffected != 0);
         }
-        private string SQLServer_InsertMessageScript()
-        {
-            DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
-            string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field6 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
-            string field8 = queue.Fields.Where(f => f.Property == "КоличествоОшибок").FirstOrDefault()?.Name;
-            string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
-
-            // TODO: cash SQL script !
-
-            StringBuilder script = new StringBuilder();
-            script.AppendLine($"INSERT [{tableName}]");
-            script.AppendLine($"([{field1}], [{field2}], [{field3}], [{field4}], [{field5}], [{field6}], [{field7}], [{field8}], [{field9}])");
-            script.AppendLine("VALUES (@p1, CAST(@p2 AS binary(16)), @p3, @p4, @p5, @p6, @p7, @p8, @p9);");
-            return script.ToString();
-        }
-
-        #endregion
-
-        #region "PostgreSQL"
-
-        public bool PostgreSQL_InsertMessage(DatabaseMessage message)
+        public bool PG_InsertMessage(DatabaseMessage message)
         {
             int recordsAffected = 0;
             {
                 NpgsqlConnection connection = new NpgsqlConnection(Settings.DatabaseSettings.ConnectionString);
                 NpgsqlCommand command = connection.CreateCommand();
                 command.CommandType = CommandType.Text;
-                command.CommandText = PostgreSQL_InsertMessageScript();
+                command.CommandText = IncomingQueueInsertScript;
                 command.CommandTimeout = 60; // seconds
 
-                command.Parameters.AddWithValue("p1", message.Code);
-                command.Parameters.AddWithValue("p2", message.Uuid.ToByteArray());
-                command.Parameters.AddWithValue("p3", message.DateTimeStamp);
-                command.Parameters.AddWithValue("p4", message.Sender);
-                command.Parameters.AddWithValue("p5", message.OperationType);
-                command.Parameters.AddWithValue("p6", message.MessageType);
-                command.Parameters.AddWithValue("p7", message.MessageBody);
-                command.Parameters.AddWithValue("p8", message.ErrorCount);
-                command.Parameters.AddWithValue("p9", message.ErrorDescription);
+                command.Parameters.AddWithValue("Идентификатор", message.Uuid.ToByteArray());
+                command.Parameters.AddWithValue("ДатаВремя", message.DateTimeStamp);
+                command.Parameters.AddWithValue("Отправитель", message.Sender);
+                command.Parameters.AddWithValue("ТипОперации", message.OperationType);
+                command.Parameters.AddWithValue("ТипСообщения", message.MessageType);
+                command.Parameters.AddWithValue("ТелоСообщения", message.MessageBody);
+                command.Parameters.AddWithValue("КоличествоОшибок", message.ErrorCount);
+                command.Parameters.AddWithValue("ОписаниеОшибки", message.ErrorDescription);
 
                 try
                 {
@@ -176,29 +145,6 @@ namespace DaJet.Agent.Consumer
                 throw new Exception("Failed to insert message to database. Records affected = " + recordsAffected.ToString());
             }
             return (recordsAffected != 0);
-        }
-        private string PostgreSQL_InsertMessageScript()
-        {
-            DatabaseQueue queue = Settings.DatabaseSettings.DatabaseQueue;
-            string tableName = queue.TableName;
-            string field1 = queue.Fields.Where(f => f.Property == "МоментВремени").FirstOrDefault()?.Name;
-            string field2 = queue.Fields.Where(f => f.Property == "Идентификатор").FirstOrDefault()?.Name;
-            string field3 = queue.Fields.Where(f => f.Property == "ДатаВремя").FirstOrDefault()?.Name;
-            string field4 = queue.Fields.Where(f => f.Property == "Отправитель").FirstOrDefault()?.Name;
-            string field5 = queue.Fields.Where(f => f.Property == "ТипОперации").FirstOrDefault()?.Name;
-            string field6 = queue.Fields.Where(f => f.Property == "ТипСообщения").FirstOrDefault()?.Name;
-            string field7 = queue.Fields.Where(f => f.Property == "ТелоСообщения").FirstOrDefault()?.Name;
-            string field8 = queue.Fields.Where(f => f.Property == "КоличествоОшибок").FirstOrDefault()?.Name;
-            string field9 = queue.Fields.Where(f => f.Property == "ОписаниеОшибки").FirstOrDefault()?.Name;
-
-            StringBuilder script = new StringBuilder();
-            script.AppendLine($"INSERT INTO {tableName}");
-            script.AppendLine($"({field1}, {field2}, {field3}, {field4}, {field5}, {field6}, {field7}, {field8}, {field9})");
-            script.AppendLine("VALUES (@p1, @p2, @p3, CAST(@p4 AS mvarchar), CAST(@p5 AS mvarchar), ");
-            script.AppendLine("CAST(@p6 AS mvarchar), CAST(@p7 AS mvarchar), @p8, CAST(@p9 AS mvarchar));");
-            return script.ToString();
-        }
-
-        #endregion
+        }        
     }
 }

@@ -1,6 +1,7 @@
 using DaJet.Agent.Consumer;
 using DaJet.Agent.Producer;
 using DaJet.Agent.Service.Services;
+using DaJet.Database.Adapter;
 using DaJet.Utilities;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -74,6 +75,8 @@ namespace DaJet.Agent.Service
                 .AddOptions()
                 .AddSingleton(Options.Create(AppSettings))
                 .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
+
+            services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
 
             if (AppSettings.UseWebServer)
             {

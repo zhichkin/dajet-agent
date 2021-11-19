@@ -17,7 +17,6 @@ namespace DaJet.Agent.Consumer
     {
         public DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
         public string ConnectionString { get; set; } = string.Empty;
-        public DatabaseQueue DatabaseQueue { get; set; } = new DatabaseQueue();
     }
     public sealed class MessageBrokerSettings
     {
