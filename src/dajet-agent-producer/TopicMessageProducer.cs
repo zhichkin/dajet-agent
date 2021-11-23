@@ -485,9 +485,9 @@ namespace DaJet.Agent.Producer
                     SendingCancellation.Cancel();
                 }
 
-                if (channel.DeliveryTagToWait != channel.CurrentDeliveryTag)
+                if (channel.DeliveryTagToWait > channel.CurrentDeliveryTag)
                 {
-                    ProducerExceptions.Enqueue(new Exception("Delivery tag to wait does not match current delivery tag."));
+                    ProducerExceptions.Enqueue(new Exception($"Delivery tag to wait [{channel.DeliveryTagToWait}] is bigger than current delivery tag [{channel.CurrentDeliveryTag}]."));
                 }
             }
             catch (OperationInterruptedException rabbitError)

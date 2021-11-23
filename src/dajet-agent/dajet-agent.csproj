@@ -5,7 +5,7 @@
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
-    <Version>5.1.0</Version>
+    <Version>5.1.1</Version>
     <Authors>Zhichkin</Authors>
     <Description>1C:Enterprise 8 database RabbitMQ adapter.
 Both Microsoft SQL Server and PostgreSQL are supported.</Description>
@@ -13,7 +13,7 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
-    <PackageReleaseNotes>The logic of waiting for the publisher confirms has been changed. If the pulishing batch of messages will not be confirmed by the RabbitMQ server within 10 minutes timeout, all the messages of that batch will be retried.</PackageReleaseNotes>
+    <PackageReleaseNotes>Minor bug fixes</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

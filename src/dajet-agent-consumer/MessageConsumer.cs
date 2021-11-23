@@ -344,8 +344,22 @@ namespace DaJet.Agent.Consumer
 
             if (!ConsumerTags.TryGetValue(args.ConsumerTag, out string exchange))
             {
-                UnsubscribeConsumer(consumer, args.ConsumerTag);
-                return;
+                //TODO: review commented code
+                //UnsubscribeConsumer(consumer, args.ConsumerTag);
+                //return;
+
+                if (!string.IsNullOrWhiteSpace(args.Exchange))
+                {
+                    exchange = args.Exchange;
+                }
+                else if (!string.IsNullOrWhiteSpace(args.RoutingKey))
+                {
+                    exchange = args.RoutingKey;
+                }
+                else
+                {
+                    exchange = "unknown";
+                }
             }
 
             JsonDataTransferMessage dataTransferMessage = GetJsonDataTransferMessage(args);
