@@ -20,6 +20,7 @@ namespace DaJet.Agent.Producer
         private const string CONNECTION_BLOCKED_ERROR_MESSAGE = "Connection is blocked: sending messages operation is canceled.";
         private const string PUBLISHER_CONFIRMATION_ERROR_MESSAGE = "The sending of the message has not been confirmed. Check the availability of the message broker.";
         private const string PUBLISHER_CONFIRMATION_TIMEOUT_MESSAGE = "The sending of the messages has been timed out. Check the availability of the message broker.";
+        private const string PUBLISHER_CONFIRMATION_NACKED_MESSAGE = "The sending of the message has been nacked. Check the load of the message broker.";
 
         private CancellationTokenSource SendingCancellation;
         private MessageProducerSettings Settings { get; set; }
@@ -184,6 +185,8 @@ namespace DaJet.Agent.Producer
         {
             IModel channel = Connection.CreateModel();
             channel.ConfirmSelect(); // enable producer confirms
+            channel.BasicAcks += BasicAcksHandler;
+            channel.BasicNacks += BasicNacksHandler;
             return new ProducerChannel()
             {
                 Channel = channel,
@@ -225,6 +228,8 @@ namespace DaJet.Agent.Producer
                     ProducerChannels[i].Queues.Clear();
                     if (!ProducerChannels[i].IsHealthy)
                     {
+                        ProducerChannels[i].Channel.BasicAcks -= BasicAcksHandler;
+                        ProducerChannels[i].Channel.BasicNacks -= BasicNacksHandler;
                         ProducerChannels[i].Channel.Dispose();
                         ProducerChannels[i] = CreateProducerChannel();
                     }
@@ -350,6 +355,8 @@ namespace DaJet.Agent.Producer
 
             int messagesSent = 0;
 
+            producerChannel.DeliveryTagToWait = CalculateDeliveryTagToWait(producerChannel);
+
             foreach (Queue<DatabaseMessage> queue in producerChannel.Queues)
             {
                 while (queue.TryDequeue(out DatabaseMessage message))
@@ -376,7 +383,19 @@ namespace DaJet.Agent.Producer
 
             return messagesSent;
         }
+        private ulong CalculateDeliveryTagToWait(ProducerChannel producerChannel)
+        {
+            ulong deliveryTag = 0;
 
+            foreach (Queue<DatabaseMessage> queue in producerChannel.Queues)
+            {
+                deliveryTag += (ulong)queue.Count;
+            }
+
+            deliveryTag += (producerChannel.Channel.NextPublishSeqNo - 1);
+
+            return deliveryTag;
+        }
         private void ConfigureMessageProperties(DatabaseMessage message, IBasicProperties properties)
         {
             properties.AppId = message.Sender;
@@ -451,18 +470,24 @@ namespace DaJet.Agent.Producer
             try
             {
                 int confirmationTimeout = Settings.MessageBrokerSettings.ConfirmationTimeout;
+                if (confirmationTimeout < 600) { confirmationTimeout = 600; }
+
                 bool confirmed = channel.Channel.WaitForConfirms(TimeSpan.FromSeconds(confirmationTimeout), out bool timedout);
+                
                 if (!confirmed)
                 {
-                    if (timedout)
-                    {
-                        ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_TIMEOUT_MESSAGE));
-                    }
-                    else
-                    {
-                        ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE));
-                    }
+                    ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_ERROR_MESSAGE));
                     SendingCancellation.Cancel();
+                }
+                else if (timedout)
+                {
+                    ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_TIMEOUT_MESSAGE));
+                    SendingCancellation.Cancel();
+                }
+
+                if (channel.DeliveryTagToWait != channel.CurrentDeliveryTag)
+                {
+                    ProducerExceptions.Enqueue(new Exception("Delivery tag to wait does not match current delivery tag."));
                 }
             }
             catch (OperationInterruptedException rabbitError)
@@ -479,7 +504,23 @@ namespace DaJet.Agent.Producer
                 SendingCancellation.Cancel();
             }
         }
+        private void BasicAcksHandler(object sender, BasicAckEventArgs args)
+        {
+            if (!(sender is IModel channel)) return;
 
+            foreach (ProducerChannel producer in ProducerChannels)
+            {
+                if (producer.Channel.ChannelNumber == channel.ChannelNumber)
+                {
+                    producer.CurrentDeliveryTag = args.DeliveryTag;
+                    break;
+                }
+            }
+        }
+        private void BasicNacksHandler(object sender, BasicNackEventArgs args)
+        {
+            ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_NACKED_MESSAGE));
+        }
         #endregion
 
         private void LogExceptions()

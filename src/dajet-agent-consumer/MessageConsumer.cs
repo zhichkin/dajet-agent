@@ -239,10 +239,9 @@ namespace DaJet.Agent.Consumer
                 consumer.Received += ProcessMessage;
 
                 string tag = channel.BasicConsume(exchange, false, consumer);
-                if (Settings.DebugMode)
-                {
-                    FileLogger.Log(LOG_TOKEN, "New consumer [" + tag + "] is started for exchange [" + exchange + "].");
-                }
+                
+                FileLogger.Log(LOG_TOKEN, "New consumer [" + tag + "] is started for the queue [" + exchange + "].");
+
                 _ = ConsumerTags.TryAdd(tag, exchange);
             }
             catch (Exception error)
@@ -289,7 +288,16 @@ namespace DaJet.Agent.Consumer
             DisposeChannel(consumerInfo.Consumer.Model);
             DisposeConsumer(consumerInfo.Consumer);
             DisposeConsumerTags(consumerInfo.Exchange);
-                        
+
+            string consumerTag = string.Empty;
+            if (consumerInfo.Consumer.ConsumerTags != null &&
+                consumerInfo.Consumer.ConsumerTags.Length > 0)
+            {
+                consumerTag = consumerInfo.Consumer.ConsumerTags[0];
+            }
+
+            FileLogger.Log(LOG_TOKEN, $"Consumer tag \"{consumerTag}\" for the queue [{consumerInfo.Exchange}] has been reset.");
+
             if (timeout > 0)
             {
                 Task.Delay(timeout).Wait();
