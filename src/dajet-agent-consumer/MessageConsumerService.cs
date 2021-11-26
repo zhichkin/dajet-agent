@@ -27,18 +27,10 @@ namespace DaJet.Agent.Consumer
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            try
-            {
-                ValidateAndConfigureDatabaseInterface();
-            }
-            catch (Exception error)
-            {
-                FileLogger.Log(LOG_TOKEN, "Message consumer service failed to start:\n" + ExceptionHelper.GetErrorText(error));
-                return Task.CompletedTask;
-            }
+            ValidateAndConfigureDatabaseInterfaceWithRetry(cancellationToken);
 
             FileLogger.Log(LOG_TOKEN, "Message consumer service is started.");
-            return base.StartAsync(cancellationToken);
+            return base.StartAsync(cancellationToken); // calls ExecuteAsync inside
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
@@ -122,6 +114,25 @@ namespace DaJet.Agent.Consumer
             else
             {
                 configurator.ConfigureIncomingQueue(queue);
+            }
+        }
+        private void ValidateAndConfigureDatabaseInterfaceWithRetry(CancellationToken stoppingToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    ValidateAndConfigureDatabaseInterface();
+                    return;
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(LOG_TOKEN, "Message consumer service failed to start:\n" + ExceptionHelper.GetErrorText(error));
+                }
+
+                FileLogger.Log(LOG_TOKEN, string.Format(CRITICAL_ERROR_DELAY_TEMPLATE, Settings.CriticalErrorDelay));
+
+                Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken).Wait();
             }
         }
     }

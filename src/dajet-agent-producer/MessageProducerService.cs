@@ -30,18 +30,10 @@ namespace DaJet.Agent.Producer
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
-            try
-            {
-                ValidateAndConfigureDatabaseInterface();
-            }
-            catch (Exception error)
-            {
-                FileLogger.Log(LOG_TOKEN, "Message producer service failed to start:\n" + ExceptionHelper.GetErrorText(error));
-                return Task.CompletedTask;
-            }
+            ValidateAndConfigureDatabaseInterfaceWithRetry(cancellationToken);
 
             FileLogger.Log(LOG_TOKEN, "Message producer service is started.");
-            return base.StartAsync(cancellationToken);
+            return base.StartAsync(cancellationToken); // calls ExecuteAsync inside
         }
         public override Task StopAsync(CancellationToken cancellationToken)
         {
@@ -152,6 +144,25 @@ namespace DaJet.Agent.Producer
             if (!configurator.OutgoingQueueSequenceExists())
             {
                 configurator.ConfigureOutgoingQueue(queue);
+            }
+        }
+        private void ValidateAndConfigureDatabaseInterfaceWithRetry(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    ValidateAndConfigureDatabaseInterface();
+                    return;
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log(LOG_TOKEN, "Message producer service failed to start:\n" + ExceptionHelper.GetErrorText(error));
+                }
+
+                FileLogger.Log(LOG_TOKEN, string.Format(CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+
+                Task.Delay(Settings.CriticalErrorDelay * 1000, cancellationToken).Wait();
             }
         }
     }
