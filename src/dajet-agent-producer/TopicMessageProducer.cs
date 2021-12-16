@@ -489,6 +489,11 @@ namespace DaJet.Agent.Producer
             try
             {
                 int confirmationTimeout = Settings.MessageBrokerSettings.ConfirmationTimeout;
+
+                if (confirmationTimeout < 600)
+                {
+                    confirmationTimeout = 600; // Добавлено для совместимости со старыми версиями
+                }
                 
                 bool confirmed = channel.Channel.WaitForConfirms(TimeSpan.FromSeconds(confirmationTimeout), out bool timedout);
                 
