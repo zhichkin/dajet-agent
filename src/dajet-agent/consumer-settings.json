@@ -2,56 +2,13 @@
   "CriticalErrorDelay": 30,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True",
-    "DatabaseQueue": {
-      "TableName": "_InfoRg58",
-      "ObjectName": "РегистрСведений.ВходящаяОчередьRabbitMQ",
-      "Fields": [
-        {
-          "Name": "_Fld61",
-          "Property": "Отправитель"
-        },
-        {
-          "Name": "_Fld62",
-          "Property": "ТипОперации"
-        },
-        {
-          "Name": "_Fld63",
-          "Property": "ТипСообщения"
-        },
-        {
-          "Name": "_Fld64",
-          "Property": "ТелоСообщения"
-        },
-        {
-          "Name": "_Fld59",
-          "Property": "МоментВремени"
-        },
-        {
-          "Name": "_Fld60",
-          "Property": "Идентификатор"
-        },
-        {
-          "Name": "_Fld65",
-          "Property": "ДатаВремя"
-        },
-        {
-          "Name": "_Fld66",
-          "Property": "ОписаниеОшибки"
-        },
-        {
-          "Name": "_Fld67",
-          "Property": "КоличествоОшибок"
-        }
-      ]
-    }
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True"
   },
   "MessageBrokerSettings": {
     "HostName": "localhost",
     "PortNumber": 5672,
     "UserName": "guest",
-    "Password": "guest",
-    "ConsumerPrefetchCount": 1
+    "Password": "guest"
   },
   "ThisNode": "MAIN",
   "SenderNodes": [ "N001", "N002" ]

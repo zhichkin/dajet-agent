@@ -6,8 +6,4 @@
     <AssemblyName>DaJet.Utilities</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="DaJet.Metadata" Version="3.1.6" />
-  </ItemGroup>
-
 </Project>

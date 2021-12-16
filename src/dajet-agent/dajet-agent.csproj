@@ -1,11 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
-    <Version>5.1.2</Version>
+    <Version>5.2.0</Version>
     <Authors>Zhichkin</Authors>
     <Description>1C:Enterprise 8 database RabbitMQ adapter.
 Both Microsoft SQL Server and PostgreSQL are supported.</Description>
@@ -13,25 +14,33 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
-    <PackageReleaseNotes>Fixed service startup bug when RDBMS is unavailable - retry logic applied.</PackageReleaseNotes>
+    <PackageReleaseNotes>Bug fixes and code cleanup</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="3.2.1" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="5.0.8" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
-    <ProjectReference Include="..\dajet-agent-model\dajet-agent-model.csproj" />
     <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
-    <ProjectReference Include="..\dajet-blazor\dajet-blazor.csproj" />
     <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="data\" />
+    <Folder Include="Properties\PublishProfiles\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="consumer-settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="producer-settings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

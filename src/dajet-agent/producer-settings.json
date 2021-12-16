@@ -4,55 +4,13 @@
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True",
     "MessagesPerTransaction": 1000,
-    "DatabaseQueryingPeriodicity": 15,
-    "UseNotifications": false,
-    "NotificationQueueName": "dajet-agent-export-queue",
-    "WaitForNotificationTimeout": 180,
-    "DatabaseQueue": {
-      "TableName": "_InfoRg3551",
-      "ObjectName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
-      "Fields": [
-        {
-          "Name": "_Fld3554",
-          "Property": "Отправитель"
-        },
-        {
-          "Name": "_Fld3555",
-          "Property": "Получатели"
-        },
-        {
-          "Name": "_Fld3556",
-          "Property": "ТипСообщения"
-        },
-        {
-          "Name": "_Fld3557",
-          "Property": "ТелоСообщения"
-        },
-        {
-          "Name": "_Fld3552",
-          "Property": "МоментВремени"
-        },
-        {
-          "Name": "_Fld3553",
-          "Property": "Идентификатор"
-        },
-        {
-          "Name": "_Fld3558",
-          "Property": "ДатаВремя"
-        },
-        {
-          "Name": "_Fld3559",
-          "Property": "ТипОперации"
-        }
-      ]
-    }
+    "DatabaseQueryingPeriodicity": 15
   },
   "MessageBrokerSettings": {
     "HostName": "localhost",
     "PortNumber": 5672,
     "UserName": "guest",
     "Password": "guest",
-    "ConfirmationTimeout": 1,
     "TopicExchange": "DISPATCHER",
     "ExchangeRole": 1
   }

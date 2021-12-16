@@ -60,14 +60,8 @@ namespace DaJet.Agent.Consumer
                 bool IsInCriticalErrorState = false;
                 try
                 {
-                    if (Settings.MessageBrokerSettings.ConsumeMode == 0)
-                    {
-                        MessageConsumer.PushConsume(); // eventing consumer (push api)
-                    }
-                    else
-                    {
-                        MessageConsumer.PullConsume(stoppingToken); // basic get consumer (pull api)
-                    }
+                    MessageConsumer.PushConsume(); // eventing consumer (push api)
+
                     FileLogger.Log(LOG_TOKEN, SERVICE_HEARTBEAT_MESSAGE);
                 }
                 catch (Exception error)

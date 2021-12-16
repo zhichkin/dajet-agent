@@ -1,9 +1,7 @@
 using DaJet.Agent.Consumer;
 using DaJet.Agent.Producer;
-using DaJet.Agent.Service.Services;
 using DaJet.Database.Adapter;
 using DaJet.Utilities;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -56,16 +54,6 @@ namespace DaJet.Agent.Service
                         .AddJsonFile("appsettings.json", optional: false);
                 })
                 .ConfigureServices(ConfigureServices);
-
-            if (AppSettings.UseWebServer)
-            {
-                builder.ConfigureWebHostDefaults(webHost =>
-                {
-                    webHost
-                        .UseKestrel()
-                        .UseStartup<Startup>();
-                });
-            }
             
             return builder;
         }
@@ -78,17 +66,11 @@ namespace DaJet.Agent.Service
 
             services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
 
-            if (AppSettings.UseWebServer)
-            {
-                services.AddSingleton<IPubSubService, PubSubService>();
-            }
-
             if (AppSettings.UseProducer)
             {
                 ConfigureProducerSettings(services);
                 services
-                    //.AddSingleton<IMessageProducer, MessageProducer>() // version 4.0
-                    .AddSingleton<IMessageProducer, TopicMessageProducer>() // version 4.1
+                    .AddSingleton<IMessageProducer, TopicMessageProducer>()
                     .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
                     .AddHostedService<MessageProducerService>();
             }

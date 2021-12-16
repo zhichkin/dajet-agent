@@ -1,5 +1,4 @@
-﻿using DaJet.Metadata;
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -41,10 +40,7 @@ namespace DaJet.Utilities
                 {
                     LogSyncronized(text);
                 }
-                catch (Exception error)
-                {
-                    // log file access error - just ignore this exception
-                }
+                catch { /* log file access error - just ignore this exception */ }
             }
         }
         private static void LogSyncronized(string text)
@@ -61,13 +57,24 @@ namespace DaJet.Utilities
             }
             catch (Exception ex)
             {
-                text += Environment.NewLine + ExceptionHelper.GetErrorText(ex);
+                text += Environment.NewLine + GetErrorText(ex);
             }
 
             using (StreamWriter writer = new StreamWriter(GetFilePath(), true, Encoding.UTF8))
             {
                 writer.WriteLine("[{0}] {1}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), text);
             }
+        }
+        private static string GetErrorText(Exception ex)
+        {
+            string errorText = string.Empty;
+            Exception error = ex;
+            while (error != null)
+            {
+                errorText += (errorText == string.Empty) ? error.Message : Environment.NewLine + error.Message;
+                error = error.InnerException;
+            }
+            return errorText;
         }
     }
 }

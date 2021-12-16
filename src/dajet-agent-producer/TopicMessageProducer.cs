@@ -13,6 +13,10 @@ using System.Threading.Tasks;
 
 namespace DaJet.Agent.Producer
 {
+    public interface IMessageProducer : IDisposable
+    {
+        void Publish(List<DatabaseMessage> messageBatch);
+    }
     public sealed class TopicMessageProducer : IMessageProducer
     {
         private const string PUBLISHER_EXCHANGE_IS_NOT_DEFINED_ERROR_MESSAGE = "Publisher exchange is not defined.";
@@ -38,7 +42,11 @@ namespace DaJet.Agent.Producer
                     {
                         if (!channel.Channel.IsClosed)
                         {
-                            channel.Channel.Close();
+                            try
+                            {
+                                channel.Channel.Close();
+                            }
+                            catch { /* "Cannot access a disposed object" exception */ }
                         }
                         channel.Channel.Dispose();
                         channel.Channel = null;
@@ -58,7 +66,11 @@ namespace DaJet.Agent.Producer
             {
                 if (Connection.IsOpen)
                 {
-                    Connection.Close();
+                    try
+                    {
+                        Connection.Close();
+                    }
+                    catch { /* "Cannot access a disposed object" exception */ }
                 }
                 Connection.Dispose();
                 Connection = null;
@@ -185,8 +197,8 @@ namespace DaJet.Agent.Producer
         {
             IModel channel = Connection.CreateModel();
             channel.ConfirmSelect(); // enable producer confirms
-            channel.BasicAcks += BasicAcksHandler;
-            channel.BasicNacks += BasicNacksHandler;
+            //channel.BasicAcks += BasicAcksHandler;
+            //channel.BasicNacks += BasicNacksHandler;
             return new ProducerChannel()
             {
                 Channel = channel,
@@ -228,9 +240,16 @@ namespace DaJet.Agent.Producer
                     ProducerChannels[i].Queues.Clear();
                     if (!ProducerChannels[i].IsHealthy)
                     {
-                        ProducerChannels[i].Channel.BasicAcks -= BasicAcksHandler;
-                        ProducerChannels[i].Channel.BasicNacks -= BasicNacksHandler;
-                        ProducerChannels[i].Channel.Dispose();
+                        // Causes "Cannot access a disposed object" exception
+                        // if Connection has been disposed due to network error for example.
+                        //ProducerChannels[i].Channel.BasicAcks -= BasicAcksHandler;
+                        //ProducerChannels[i].Channel.BasicNacks -= BasicNacksHandler;
+
+                        if (ProducerChannels[i].Channel != null)
+                        {
+                            ProducerChannels[i].Channel.Dispose();
+                        }
+
                         ProducerChannels[i] = CreateProducerChannel();
                     }
                 }
@@ -470,8 +489,7 @@ namespace DaJet.Agent.Producer
             try
             {
                 int confirmationTimeout = Settings.MessageBrokerSettings.ConfirmationTimeout;
-                if (confirmationTimeout < 600) { confirmationTimeout = 600; }
-
+                
                 bool confirmed = channel.Channel.WaitForConfirms(TimeSpan.FromSeconds(confirmationTimeout), out bool timedout);
                 
                 if (!confirmed)
@@ -483,11 +501,6 @@ namespace DaJet.Agent.Producer
                 {
                     ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_TIMEOUT_MESSAGE));
                     SendingCancellation.Cancel();
-                }
-
-                if (channel.DeliveryTagToWait > channel.CurrentDeliveryTag)
-                {
-                    ProducerExceptions.Enqueue(new Exception($"Delivery tag to wait [{channel.DeliveryTagToWait}] is bigger than current delivery tag [{channel.CurrentDeliveryTag}]."));
                 }
             }
             catch (OperationInterruptedException rabbitError)
@@ -506,21 +519,22 @@ namespace DaJet.Agent.Producer
         }
         private void BasicAcksHandler(object sender, BasicAckEventArgs args)
         {
-            if (!(sender is IModel channel)) return;
+            //if (!(sender is IModel channel)) return;
 
-            foreach (ProducerChannel producer in ProducerChannels)
-            {
-                if (producer.Channel.ChannelNumber == channel.ChannelNumber)
-                {
-                    producer.CurrentDeliveryTag = args.DeliveryTag;
-                    break;
-                }
-            }
+            //foreach (ProducerChannel producer in ProducerChannels)
+            //{
+            //    if (producer.Channel.ChannelNumber == channel.ChannelNumber)
+            //    {
+            //        producer.CurrentDeliveryTag = args.DeliveryTag;
+            //        break;
+            //    }
+            //}
         }
         private void BasicNacksHandler(object sender, BasicNackEventArgs args)
         {
-            ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_NACKED_MESSAGE));
+            //ProducerExceptions.Enqueue(new OperationCanceledException(PUBLISHER_CONFIRMATION_NACKED_MESSAGE));
         }
+        
         #endregion
 
         private void LogExceptions()

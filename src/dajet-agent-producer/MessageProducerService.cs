@@ -46,14 +46,6 @@ namespace DaJet.Agent.Producer
         {
             // Running the job in the background
             _ = Task.Run(async () => { await DoWork(cancellationToken); }, cancellationToken);
-
-            //Task task = Task.Factory.StartNew(
-            //    DoWork,
-            //    cancellationToken,
-            //    cancellationToken,
-            //    TaskCreationOptions.LongRunning,
-            //    TaskScheduler.Default);
-
             // Return completed task to let other services to run
             return Task.CompletedTask;
         }
@@ -67,8 +59,10 @@ namespace DaJet.Agent.Producer
                 }
                 catch (Exception error)
                 {
-                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
-                    FileLogger.Log(LOG_TOKEN, string.Format(CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+                    FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error)
+                        + Environment.NewLine
+                        + string.Format(CRITICAL_ERROR_DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+
                     await Task.Delay(Settings.CriticalErrorDelay * 1000, stoppingToken);
                     continue;
                 }
@@ -84,6 +78,7 @@ namespace DaJet.Agent.Producer
                     catch
                     {
                         FileLogger.Log(LOG_TOKEN, DATABASE_NOTIFICATIONS_ARE_NOT_ENABLED_MESSAGE);
+
                         await Task.Delay(Settings.DatabaseSettings.DatabaseQueryingPeriodicity * 1000, stoppingToken);
                     }
                 }

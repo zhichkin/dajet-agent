@@ -18,7 +18,6 @@
   <ItemGroup>
     <ProjectReference Include="..\dajet-database-adapter\dajet-database-adapter.csproj" />
     <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
-    <ProjectReference Include="..\message-handler\message-handler.csproj" />
   </ItemGroup>
 
 </Project>

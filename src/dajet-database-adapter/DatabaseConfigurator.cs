@@ -19,6 +19,7 @@ namespace DaJet.Database.Adapter
         IDatabaseConfigurator UseConnectionString(string connectionString);
         IDatabaseConfigurator UseDatabaseProvider(DatabaseProvider databaseProvider);
         bool TryOpenInfoBase(out InfoBase infoBase, out string errorMessage);
+        int YearOffset { get; }
         ApplicationObject GetIncomingQueueMetadata(InfoBase infoBase);
         ApplicationObject GetOutgoingQueueMetadata(InfoBase infoBase);
         string IncomingQueueInsertScript { get; }
@@ -47,6 +48,8 @@ namespace DaJet.Database.Adapter
             return this;
         }
 
+        public int YearOffset { get; private set; } = 0;
+
         public bool TryOpenInfoBase(out InfoBase infoBase, out string errorMessage)
         {
             IMetadataService metadataService = new MetadataService()
@@ -58,6 +61,7 @@ namespace DaJet.Database.Adapter
             try
             {
                 infoBase = metadataService.OpenInfoBase();
+                YearOffset = infoBase.YearOffset;
             }
             catch (Exception error)
             {

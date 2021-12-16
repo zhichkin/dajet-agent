@@ -22,12 +22,14 @@ namespace DaJet.Agent.Consumer
         private IServiceProvider Services { get; set; }
         private MessageConsumerSettings Settings { get; set; }
         private string IncomingQueueInsertScript { get; set; }
+        private int YearOffset { get; } = 0;
         public DatabaseMessageProducer(IServiceProvider serviceProvider, IOptions<MessageConsumerSettings> options)
         {
             Settings = options.Value;
             Services = serviceProvider;
             IDatabaseConfigurator configurator = Services.GetService<IDatabaseConfigurator>();
             IncomingQueueInsertScript = configurator.IncomingQueueInsertScript;
+            YearOffset = configurator.YearOffset;
         }
         private void DisposeDatabaseResources(DbConnection connection, DbDataReader reader, DbCommand command)
         {
@@ -46,24 +48,17 @@ namespace DaJet.Agent.Consumer
         {
             DatabaseMessage dbm = new DatabaseMessage()
             {
-                Sender = message.Sender
+                Sender = message.Sender,
+                DateTimeStamp = DateTime.Now.AddYears(YearOffset)
             };
-            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.PostgreSQL)
-            {
-                // SELECT ofset FROM _yearoffset - returns zero rows
-                dbm.DateTimeStamp = DateTime.Now;
-            }
-            else
-            {
-                // настройка ИБ 1С - смещение дат SELECT [Offset] FROM [_YearOffset]
-                dbm.DateTimeStamp = DateTime.Now.AddYears(2000);
-            }
+
             if (message.Objects.Count > 0)
             {
                 dbm.MessageType = message.Objects[0].Type;
                 dbm.MessageBody = message.Objects[0].Body;
                 dbm.OperationType = message.Objects[0].Operation;
             }
+
             return dbm;
         }
         public bool InsertMessage(DatabaseMessage message)
@@ -132,7 +127,7 @@ namespace DaJet.Agent.Consumer
                 }
                 catch (Exception error)
                 {
-                    // TODO: replace with using statement and handle exceptions outside the method !?
+                    // FIXME: replace with using statement and handle exceptions outside the method !?
                     FileLogger.Log(LOG_TOKEN, ExceptionHelper.GetErrorText(error));
                 }
                 finally
@@ -140,10 +135,7 @@ namespace DaJet.Agent.Consumer
                     DisposeDatabaseResources(connection, null, command);
                 }
             }
-            if (Settings.DebugMode)
-            {
-                throw new Exception("Failed to insert message to database. Records affected = " + recordsAffected.ToString());
-            }
+
             return (recordsAffected != 0);
         }        
     }

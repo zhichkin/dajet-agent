@@ -5,7 +5,6 @@ namespace DaJet.Agent.Producer
     public sealed class MessageProducerSettings
     {
         public int CriticalErrorDelay { get; set; } = 300; // seconds
-        public bool UseMessageHandlers { get; set; } = false;
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
     }
@@ -26,7 +25,7 @@ namespace DaJet.Agent.Producer
         public int PortNumber { get; set; } = 5672;
         public string UserName { get; set; } = "guest";
         public string Password { get; set; } = "guest";
-        public int ConfirmationTimeout { get; set; } = 1; // seconds
+        public int ConfirmationTimeout { get; set; } = 600; // seconds
         public string TopicExchange { get; set; } = string.Empty; // topic (durable)
         public int ExchangeRole { get; set; } = 0; // 0 - aggregator (Sender); 1 - dispatcher (Recipients)
         public int CopyType { get; set; } = 0; // 0 - CarbonCopy; 1 - BlindCarbonCopy

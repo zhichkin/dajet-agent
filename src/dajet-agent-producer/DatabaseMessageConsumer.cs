@@ -1,7 +1,5 @@
-﻿using DaJet.Agent.MessageHandlers;
-using DaJet.Database.Adapter;
+﻿using DaJet.Database.Adapter;
 using DaJet.Metadata;
-using DaJet.Utilities;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -25,6 +23,7 @@ namespace DaJet.Agent.Producer
         private MessageProducerSettings Settings { get; set; }
         private IMessageProducer MessageProducer { get; set; }
         private string OutgoingQueueSelectScript { get; set; }
+        private int YearOffset { get; } = 0;
         public DatabaseMessageConsumer(IServiceProvider serviceProvider, IOptions<MessageProducerSettings> options)
         {
             Settings = options.Value;
@@ -32,6 +31,7 @@ namespace DaJet.Agent.Producer
             MessageProducer = Services.GetService<IMessageProducer>();
             IDatabaseConfigurator configurator = Services.GetService<IDatabaseConfigurator>();
             OutgoingQueueSelectScript = configurator.OutgoingQueueSelectScript;
+            YearOffset = configurator.YearOffset;
         }
 
         public int ConsumeMessages(int messageCount)
@@ -76,10 +76,6 @@ namespace DaJet.Agent.Producer
 
                         if (batch.Count > 0)
                         {
-                            //if (Settings.UseMessageHandlers)
-                            //{
-                            //    ProcessMessages(batch);
-                            //}
                             MessageProducer.Publish(batch);
                         }
 
@@ -105,7 +101,7 @@ namespace DaJet.Agent.Producer
             DatabaseMessage message = new DatabaseMessage();
             message.Code = reader.IsDBNull(0) ? 0 : (long)reader.GetDecimal("МоментВремени");
             message.Uuid = reader.IsDBNull(1) ? Guid.Empty : new Guid((byte[])reader["Идентификатор"]);
-            message.DateTimeStamp = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime("ДатаВремя");
+            message.DateTimeStamp = reader.IsDBNull(2) ? DateTime.MinValue : reader.GetDateTime("ДатаВремя").AddYears(-YearOffset);
             message.Sender = reader.IsDBNull(3) ? string.Empty : reader.GetString("Отправитель");
             message.Recipients = reader.IsDBNull(4) ? string.Empty : reader.GetString("Получатели");
             message.OperationType = reader.IsDBNull(5) ? string.Empty : reader.GetString("ТипОперации");
@@ -166,22 +162,6 @@ namespace DaJet.Agent.Producer
             script.AppendLine("message_body        AS [message_body]");
             script.AppendLine($"FROM [{Settings.DatabaseSettings.NotificationQueueName}]), TIMEOUT {timeout};");
             return script.ToString();
-        }
-
-        private void ProcessMessages(List<DatabaseMessage> batch)
-        {
-            IMessageHandler messageHandler = new ШтрихкодыУпаковокЗаказовКлиентовMessageHandler();
-            foreach (DatabaseMessage message in batch)
-            {
-                try
-                {
-                    messageHandler.ProcessMessage("output", message.MessageType, message.MessageBody);
-                }
-                catch (Exception error)
-                {
-                    FileLogger.Log(ExceptionHelper.GetErrorText(error));
-                }
-            }
         }
     }
 }
