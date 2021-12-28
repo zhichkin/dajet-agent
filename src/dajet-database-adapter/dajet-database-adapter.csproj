@@ -18,7 +18,7 @@ Microsoft SQL Server and PostgreSQL are supported.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DaJet.Metadata" Version="3.1.6" />
+    <PackageReference Include="DaJet.Metadata" Version="3.1.9" />
   </ItemGroup>
 
 </Project>
