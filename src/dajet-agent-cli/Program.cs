@@ -34,6 +34,8 @@ namespace DaJet.Agent.CLI
 
         public static int Main(string[] args)
         {
+            //args = new string[] { "--help" };
+
             RootCommand command = new RootCommand()
             {
                 new Option<string>("--ms", "Microsoft SQL Server address or name"),
@@ -43,7 +45,7 @@ namespace DaJet.Agent.CLI
                 new Option<string>("--p", "User password if SQL Server authentication is used"),
                 new Option<FileInfo>("--o", "Catalog path to save settings files")
             };
-            command.Description = "DaJet Agent CLI (settings files generation)";
+            command.Description = "DaJet Agent CLI 4.1.0 (settings files generation)";
             command.Handler = CommandHandler.Create<string, string, string, string, string, FileInfo>(ExecuteCommand);
             return command.Invoke(args);
         }
@@ -91,10 +93,10 @@ namespace DaJet.Agent.CLI
                 metadataService.ConfigureConnectionString(pg, d, u, p);
             }
 
-            InfoBase infoBase = metadataService.LoadInfoBase();
+            //InfoBase infoBase = metadataService.LoadInfoBase();
 
-            MessageConsumerSettings consumerSettings = CreateConsumerSettings(infoBase, metadataService);
-            MessageProducerSettings producerSettings = CreateProducerSettings(infoBase, metadataService);
+            MessageConsumerSettings consumerSettings = CreateConsumerSettings(metadataService);
+            MessageProducerSettings producerSettings = CreateProducerSettings(metadataService);
 
             string consumerPath = Path.Combine(o.FullName, CONSUMER_SETTINGS_FILE_NAME);
             string producerPath = Path.Combine(o.FullName, PRODUCER_SETTINGS_FILE_NAME);
@@ -103,14 +105,14 @@ namespace DaJet.Agent.CLI
             SaveProducerSettings(producerPath, producerSettings);
         }
 
-        private static MessageConsumerSettings CreateConsumerSettings(InfoBase infoBase, IMetadataService metadataService)
+        private static MessageConsumerSettings CreateConsumerSettings(IMetadataService metadataService)
         {
             MessageConsumerSettings settings = new MessageConsumerSettings();
 
-            ApplicationObject metaObject = infoBase.InformationRegisters.Values
-                .Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
+            //ApplicationObject metaObject = infoBase.InformationRegisters.Values
+            //    .Where(с => с.Name == CONSUMER_TABLE_QUEUE_NAME).FirstOrDefault();
 
-            if (metaObject == null) return settings;
+            //if (metaObject == null) return settings;
 
             settings.DatabaseSettings = new Consumer.DatabaseSettings()
             {
@@ -135,16 +137,16 @@ namespace DaJet.Agent.CLI
             }
         }
 
-        private static MessageProducerSettings CreateProducerSettings(InfoBase infoBase, IMetadataService metadataService)
+        private static MessageProducerSettings CreateProducerSettings(IMetadataService metadataService)
         {
             MessageProducerSettings settings = new MessageProducerSettings();
 
             settings.MessageBrokerSettings.TopicExchange = string.Format("{0}.{1}", EXCHANGE_NAMESPACE, PRODUCER_EXCHANGE_NAME);
 
-            ApplicationObject metaObject = infoBase.InformationRegisters.Values
-                .Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
+            //ApplicationObject metaObject = infoBase.InformationRegisters.Values
+            //    .Where(с => с.Name == PRODUCER_TABLE_QUEUE_NAME).FirstOrDefault();
 
-            if (metaObject == null) return settings;
+            //if (metaObject == null) return settings;
 
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
