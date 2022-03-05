@@ -6,3 +6,6 @@ rabbitmqctl set_vm_memory_high_watermark 0.4
 
 If you have a rabbitmq.conf file, append this line to it:
 tcp_listen_options.send_timeout = 120000
+
+Waiting for consumer ACK (default is 30 minutes)
+consumer_timeout = 1800000
