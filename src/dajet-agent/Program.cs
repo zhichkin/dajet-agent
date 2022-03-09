@@ -1,7 +1,6 @@
 using DaJet.Agent.Consumer;
 using DaJet.Agent.Producer;
-using DaJet.Database.Adapter;
-using DaJet.Utilities;
+using DaJet.Logging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,14 +18,13 @@ namespace DaJet.Agent.Service
         {
             InitializeAppSettings();
 
-            FileLogger.LogSize = AppSettings.LogSize;
+            FileLogger.UseLogSize(AppSettings.LogSize);
             FileLogger.UseCatalog(AppSettings.AppCatalog);
+            FileLogger.UseFileName("dajet-agent");
 
-            FileLogger.Log(LOG_TOKEN, "Hosting service is started.");
-
+            FileLogger.Log("Hosting service is started.");
             CreateHostBuilder().Build().Run();
-            
-            FileLogger.Log(LOG_TOKEN, "Hosting service is stopped.");
+            FileLogger.Log("Hosting service is stopped.");
         }
         private static void InitializeAppSettings()
         {
@@ -45,6 +43,7 @@ namespace DaJet.Agent.Service
         private static IHostBuilder CreateHostBuilder()
         {
             IHostBuilder builder = Host.CreateDefaultBuilder()
+                .UseSystemd()
                 .UseWindowsService()
                 .ConfigureAppConfiguration(config =>
                 {
@@ -64,25 +63,41 @@ namespace DaJet.Agent.Service
                 .AddSingleton(Options.Create(AppSettings))
                 .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
 
-            services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
-
             if (AppSettings.UseProducer)
             {
                 ConfigureProducerSettings(services);
-                services
-                    .AddSingleton<IMessageProducer, TopicMessageProducer>()
-                    .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
-                    .AddHostedService<MessageProducerService>();
+                services.AddHostedService<MessageProducerService>();
             }
 
             if (AppSettings.UseConsumer)
             {
                 ConfigureConsumerSettings(services);
-                services
-                    .AddSingleton<IMessageConsumer, MessageConsumer>()
-                    .AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>()
-                    .AddHostedService<MessageConsumerService>();
+                services.AddHostedService<MessageConsumerService>();
             }
+
+            #region "Deprecated version"
+
+            //services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
+
+            //if (AppSettings.UseProducer)
+            //{
+            //    ConfigureProducerSettings(services);
+            //    services
+            //        .AddSingleton<IMessageProducer, TopicMessageProducer>()
+            //        .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
+            //        .AddHostedService<MessageProducerService>();
+            //}
+
+            //if (AppSettings.UseConsumer)
+            //{
+            //    ConfigureConsumerSettings(services);
+            //    services
+            //        .AddSingleton<IMessageConsumer, MessageConsumer>()
+            //        .AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>()
+            //        .AddHostedService<MessageConsumerService>();
+            //}
+
+            #endregion
         }
         private static void ConfigureProducerSettings(IServiceCollection services)
         {

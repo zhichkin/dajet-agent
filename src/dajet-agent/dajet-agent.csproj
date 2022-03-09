@@ -6,7 +6,7 @@
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
-    <Version>5.2.1</Version>
+    <Version>6.0.0</Version>
     <Authors>Zhichkin</Authors>
     <Description>1C:Enterprise 8 database RabbitMQ adapter.
 Both Microsoft SQL Server and PostgreSQL are supported.</Description>
@@ -18,14 +18,10 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="5.0.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\dajet-agent-consumer\dajet-agent-consumer.csproj" />
-    <ProjectReference Include="..\dajet-agent-producer\dajet-agent-producer.csproj" />
-    <ProjectReference Include="..\dajet-utilities\dajet-utilities.csproj" />
+    <PackageReference Include="DaJet.RabbitMQ" Version="0.1.2" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0" />
   </ItemGroup>
 
   <ItemGroup>
