@@ -1,6 +1,7 @@
 using DaJet.Agent.Consumer;
 using DaJet.Agent.Producer;
 using DaJet.Logging;
+using DaJet.RabbitMQ;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -63,6 +64,9 @@ namespace DaJet.Agent.Service
                 .AddSingleton(Options.Create(AppSettings))
                 .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
 
+            ConfigureDaJetAgentOptions(services);
+            services.AddHostedService<RabbitMQConfigurator>();
+
             if (AppSettings.UseProducer)
             {
                 ConfigureProducerSettings(services);
@@ -98,6 +102,33 @@ namespace DaJet.Agent.Service
             //}
 
             #endregion
+        }
+        private static void ConfigureDaJetAgentOptions(IServiceCollection services)
+        {
+            MessageProducerSettings settings = new MessageProducerSettings();
+
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .SetBasePath(AppSettings.AppCatalog)
+                .AddJsonFile("producer-settings.json", optional: false)
+                .Build();
+
+            config.Bind(settings);
+
+            DaJetAgentOptions options = new DaJetAgentOptions()
+            {
+                DatabaseProvider = settings.DatabaseSettings.DatabaseProvider,
+                ConnectionString = settings.DatabaseSettings.ConnectionString,
+                HostName = settings.MessageBrokerSettings.HostName,
+                VirtualHost = settings.MessageBrokerSettings.VirtualHost,
+                PortNumber = settings.MessageBrokerSettings.PortNumber,
+                UserName = settings.MessageBrokerSettings.UserName,
+                Password = settings.MessageBrokerSettings.Password,
+                ExchangeRole = (settings.MessageBrokerSettings.ExchangeRole == 0
+                ? ExchangeRoles.Aggregator
+                : ExchangeRoles.Dispatcher)
+            };
+
+            services.AddSingleton(Options.Create(options));
         }
         private static void ConfigureProducerSettings(IServiceCollection services)
         {

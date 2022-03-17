@@ -53,7 +53,9 @@ namespace DaJet.Agent.Consumer
                 {
                     FileLogger.LogException(error);
                 }
+                
                 FileLogger.Log(string.Format(DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+
                 await Task.Delay(TimeSpan.FromSeconds(Settings.CriticalErrorDelay), cancellationToken);
             }
         }

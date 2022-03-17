@@ -7,9 +7,8 @@
   "MessageBrokerSettings": {
     "HostName": "localhost",
     "PortNumber": 5672,
+    "VirtualHost": "/",
     "UserName": "guest",
     "Password": "guest"
-  },
-  "ThisNode": "MAIN",
-  "SenderNodes": [ "N001", "N002" ]
+  }
 }

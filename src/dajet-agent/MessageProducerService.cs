@@ -48,6 +48,8 @@ namespace DaJet.Agent.Producer
         {
             while (!cancellationToken.IsCancellationRequested)
             {
+                int delay = Settings.DatabaseSettings.DatabaseQueryingPeriodicity;
+
                 try
                 {
                     TryDoWork(cancellationToken);
@@ -55,9 +57,12 @@ namespace DaJet.Agent.Producer
                 catch (Exception error)
                 {
                     FileLogger.LogException(error);
+                    delay = Settings.CriticalErrorDelay;
                 }
-                FileLogger.Log(string.Format(DELAY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
-                await Task.Delay(TimeSpan.FromSeconds(Settings.CriticalErrorDelay), cancellationToken);
+                
+                FileLogger.Log(string.Format(DELAY_MESSAGE_TEMPLATE, delay));
+
+                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
             }
         }
         private void TryDoWork(CancellationToken cancellationToken)
