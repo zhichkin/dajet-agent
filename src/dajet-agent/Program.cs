@@ -64,6 +64,10 @@ namespace DaJet.Agent.Service
                 .AddSingleton(Options.Create(AppSettings))
                 .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
 
+            services.AddMemoryCache();
+            services.AddHostedService<MetadataCacheService>();
+            services.AddSingleton<IMetadataCache, MetadataCache>();
+
             ConfigureDaJetAgentOptions(services);
             services.AddHostedService<RabbitMQConfigurator>();
 

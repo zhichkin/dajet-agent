@@ -1,8 +1,8 @@
-﻿using DaJet.Data.Mapping;
+﻿using DaJet.Agent.Service;
+using DaJet.Data.Mapping;
 using DaJet.Data.Messaging;
 using DaJet.Json;
 using DaJet.Logging;
-using DaJet.Metadata;
 using DaJet.Metadata.Model;
 using DaJet.RabbitMQ;
 using Microsoft.Extensions.Hosting;
@@ -16,12 +16,15 @@ namespace DaJet.Agent.Producer
 {
     internal sealed class MessageProducerService : BackgroundService
     {
+        private readonly IMetadataCache _metadataCache;
+
         private const string OUTGOING_QUEUE_NAME = "РегистрСведений.ИсходящаяОчередьRabbitMQ";
         private const string DELAY_MESSAGE_TEMPLATE = "Message producer service delay for {0} seconds.";
         private const string RETRY_MESSAGE_TEMPLATE = "Message producer service will retry in {0} seconds.";
         private MessageProducerSettings Settings { get; set; }
-        public MessageProducerService(IOptions<MessageProducerSettings> options)
+        public MessageProducerService(IOptions<MessageProducerSettings> options, IMetadataCache cache)
         {
+            _metadataCache = cache;
             Settings = options.Value;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -103,12 +106,9 @@ namespace DaJet.Agent.Producer
             {
                 try
                 {
-                    if (!new MetadataService()
-                        .UseDatabaseProvider(Settings.DatabaseSettings.DatabaseProvider)
-                        .UseConnectionString(Settings.DatabaseSettings.ConnectionString)
-                        .TryOpenInfoBase(out infoBase, out string error))
+                    if (!_metadataCache.TryGet(out infoBase))
                     {
-                        throw new Exception(error);
+                        throw new Exception("Failed to get metadata from cache.");
                     }
 
                     queue = infoBase.GetApplicationObjectByName(OUTGOING_QUEUE_NAME);

@@ -12,14 +12,16 @@ using System.Threading.Tasks;
 
 namespace DaJet.Agent.Service
 {
-    internal class RabbitMQConfigurator : BackgroundService
+    internal sealed class RabbitMQConfigurator : BackgroundService
     {
         private const string SHUTDOWN_MESSAGE = "RabbitMQ configurator shutdown.";
 
         private CancellationToken _cancellationToken;
+        private readonly IMetadataCache _metadataCache;
         private DaJetAgentOptions Options { get; set; }
-        public RabbitMQConfigurator(IOptions<DaJetAgentOptions> options)
+        public RabbitMQConfigurator(IOptions<DaJetAgentOptions> options, IMetadataCache cache)
         {
+            _metadataCache = cache;
             Options = options.Value;
         }
         protected override Task ExecuteAsync(CancellationToken cancellationToken)
@@ -99,12 +101,9 @@ namespace DaJet.Agent.Service
             {
                 try
                 {
-                    if (!new MetadataService()
-                        .UseDatabaseProvider(Options.DatabaseProvider)
-                        .UseConnectionString(Options.ConnectionString)
-                        .TryOpenInfoBase(out InfoBase infoBase, out string error))
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
                     {
-                        throw new Exception(error);
+                        throw new Exception("Failed to get metadata from cache.");
                     }
 
                     ExchangePlanHelper settings = new ExchangePlanHelper(
@@ -123,6 +122,8 @@ namespace DaJet.Agent.Service
                     FileLogger.Log("Failed to get exchange plan settings.");
                     FileLogger.LogException(error);
                 }
+
+                Task.Delay(TimeSpan.FromSeconds(Options.RefreshTimeout)).Wait(_cancellationToken);
             }
         }
         private bool TryGetDispatcherTopic(in IRabbitMQHttpManager manager, out ExchangeInfo exchange)

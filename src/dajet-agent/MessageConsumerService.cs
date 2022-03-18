@@ -1,5 +1,5 @@
-﻿using DaJet.Logging;
-using DaJet.Metadata;
+﻿using DaJet.Agent.Service;
+using DaJet.Logging;
 using DaJet.Metadata.Model;
 using DaJet.RabbitMQ;
 using Microsoft.Extensions.Hosting;
@@ -8,17 +8,21 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using ExchangePlanHelper = DaJet.RabbitMQ.ExchangePlanHelper;
 
 namespace DaJet.Agent.Consumer
 {
     internal sealed class MessageConsumerService : BackgroundService
     {
+        private readonly IMetadataCache _metadataCache;
+
         private const string INCOMING_QUEUE_NAME = "РегистрСведений.ВходящаяОчередьRabbitMQ";
         private const string DELAY_MESSAGE_TEMPLATE = "Message consumer service delay for {0} seconds.";
         private const string RETRY_MESSAGE_TEMPLATE = "Message consumer service will retry in {0} seconds.";
         private MessageConsumerSettings Settings { get; set; }
-        public MessageConsumerService(IOptions<MessageConsumerSettings> options)
+        public MessageConsumerService(IOptions<MessageConsumerSettings> options, IMetadataCache cache)
         {
+            _metadataCache = cache;
             Settings = options.Value;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
@@ -81,12 +85,9 @@ namespace DaJet.Agent.Consumer
             {
                 try
                 {
-                    if (!new MetadataService()
-                        .UseDatabaseProvider(Settings.DatabaseSettings.DatabaseProvider)
-                        .UseConnectionString(Settings.DatabaseSettings.ConnectionString)
-                        .TryOpenInfoBase(out InfoBase infoBase, out string error))
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
                     {
-                        throw new Exception(error);
+                        throw new Exception("Failed to get metadata from cache.");
                     }
 
                     ExchangePlanHelper settings = new ExchangePlanHelper(
