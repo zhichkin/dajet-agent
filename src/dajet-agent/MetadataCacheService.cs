@@ -1,8 +1,5 @@
 ﻿using DaJet.Logging;
-using DaJet.Metadata;
-using DaJet.Metadata.Model;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,12 +9,11 @@ namespace DaJet.Agent.Service
     internal sealed class MetadataCacheService : BackgroundService
     {
         private readonly IMetadataCache _cache;
+        private readonly int _updateTimeout = 300; // seconds
         private CancellationToken _cancellationToken;
-        private DaJetAgentOptions Options { get; set; }
-        public MetadataCacheService(IOptions<DaJetAgentOptions> options, IMetadataCache cache)
+        public MetadataCacheService(IMetadataCache cache)
         {
             _cache = cache;
-            Options = options.Value;
         }
         protected override Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -33,7 +29,7 @@ namespace DaJet.Agent.Service
                 {
                     TryDoWork();
 
-                    Task.Delay(TimeSpan.FromSeconds(Options.RefreshTimeout)).Wait(_cancellationToken);
+                    Task.Delay(TimeSpan.FromSeconds(_updateTimeout)).Wait(_cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -44,21 +40,22 @@ namespace DaJet.Agent.Service
                     FileLogger.LogException(error);
                 }
             }
+
+            FileLogger.Log("[MetadataCacheService] Shutdown.");
         }
         private void TryDoWork()
         {
-            if (new MetadataService()
-                .UseDatabaseProvider(Options.DatabaseProvider)
-                .UseConnectionString(Options.ConnectionString)
-                .TryOpenInfoBase(out InfoBase infoBase, out string error))
-            {
-                _cache.Set(in infoBase);
+            FileLogger.Log("[MetadataCacheService] Updating metadata cache ...");
 
-                FileLogger.Log($"[MetadataCacheService] Metadata cache updated successfully.");
+            _cache.Refresh(out string error); // Initialize or refresh metadata cache
+
+            if (string.IsNullOrEmpty(error))
+            {
+                FileLogger.Log("[MetadataCacheService] Metadata cache updated successfully.");
             }
             else
             {
-                FileLogger.Log($"[MetadataCacheService] Failed to update metadata cache: {error}");
+                FileLogger.Log($"[MetadataCacheService] Failed to update metadata cache.\n{error}");
             }
         }
     }
