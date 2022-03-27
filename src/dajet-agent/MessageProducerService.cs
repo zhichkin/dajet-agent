@@ -3,6 +3,7 @@ using DaJet.Data.Mapping;
 using DaJet.Data.Messaging;
 using DaJet.Json;
 using DaJet.Logging;
+using DaJet.Metadata;
 using DaJet.Metadata.Model;
 using DaJet.RabbitMQ;
 using Microsoft.Extensions.Hosting;
@@ -81,7 +82,7 @@ namespace DaJet.Agent.Producer
 
             EntityJsonSerializer serializer = new EntityJsonSerializer(provider);
 
-            using (IMessageConsumer consumer = new MsMessageConsumer(Settings.DatabaseSettings.ConnectionString, in queue))
+            using (IMessageConsumer consumer = GetMessageConsumer(in queue))
             {
                 using (RmqMessageProducer producer = new RmqMessageProducer(uri, string.Empty))
                 {
@@ -98,6 +99,17 @@ namespace DaJet.Agent.Producer
 
                     FileLogger.Log($"Published {published} messages.");
                 }
+            }
+        }
+        private IMessageConsumer GetMessageConsumer(in ApplicationObject queue)
+        {
+            if (Settings.DatabaseSettings.DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                return new MsMessageConsumer(Settings.DatabaseSettings.ConnectionString, in queue);
+            }
+            else
+            {
+                return new PgMessageConsumer(Settings.DatabaseSettings.ConnectionString, in queue);
             }
         }
         private void GetMessagingSettingsWithRetry(out InfoBase infoBase, out ApplicationObject queue, CancellationToken cancellationToken)
