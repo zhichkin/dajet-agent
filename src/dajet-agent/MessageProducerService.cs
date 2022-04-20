@@ -73,14 +73,14 @@ namespace DaJet.Agent.Producer
         {
             string uri = Settings.MessageBrokerSettings.BuildUri();
 
-            GetMessagingSettingsWithRetry(out InfoBase infoBase, out ApplicationObject queue, cancellationToken);
+            GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken); // out InfoBase infoBase
 
-            EntityDataMapperProvider provider = new EntityDataMapperProvider(
-                infoBase,
-                Settings.DatabaseSettings.DatabaseProvider,
-                Settings.DatabaseSettings.ConnectionString);
+            //EntityDataMapperProvider provider = new EntityDataMapperProvider(
+            //    infoBase,
+            //    Settings.DatabaseSettings.DatabaseProvider,
+            //    Settings.DatabaseSettings.ConnectionString);
 
-            EntityJsonSerializer serializer = new EntityJsonSerializer(provider);
+            //EntityJsonSerializer serializer = new EntityJsonSerializer(provider);
 
             using (IMessageConsumer consumer = GetMessageConsumer(in queue))
             {
@@ -95,7 +95,7 @@ namespace DaJet.Agent.Producer
                         producer.Initialize(ExchangeRoles.Dispatcher);
                     }
 
-                    int published = producer.Publish(consumer, serializer);
+                    int published = producer.Publish(consumer); // serializer
 
                     FileLogger.Log($"Published {published} messages.");
                 }
@@ -112,13 +112,13 @@ namespace DaJet.Agent.Producer
                 return new PgMessageConsumer(Settings.DatabaseSettings.ConnectionString, in queue);
             }
         }
-        private void GetMessagingSettingsWithRetry(out InfoBase infoBase, out ApplicationObject queue, CancellationToken cancellationToken)
+        private void GetMessagingSettingsWithRetry(out ApplicationObject queue, CancellationToken cancellationToken) // out InfoBase infoBase
         {
             while (true)
             {
                 try
                 {
-                    if (!_metadataCache.TryGet(out infoBase))
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
                     {
                         throw new Exception("Failed to get metadata from cache.");
                     }
