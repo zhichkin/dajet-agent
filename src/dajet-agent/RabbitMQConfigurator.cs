@@ -1,5 +1,4 @@
 ﻿using DaJet.Logging;
-using DaJet.Metadata;
 using DaJet.Metadata.Model;
 using DaJet.RabbitMQ;
 using DaJet.RabbitMQ.HttpApi;
@@ -18,11 +17,13 @@ namespace DaJet.Agent.Service
 
         private CancellationToken _cancellationToken;
         private readonly IMetadataCache _metadataCache;
+        private AppSettings Settings { get; set; }
         private DaJetAgentOptions Options { get; set; }
-        public RabbitMQConfigurator(IOptions<DaJetAgentOptions> options, IMetadataCache cache)
+        public RabbitMQConfigurator(IOptions<AppSettings> settings, IOptions<DaJetAgentOptions> options, IMetadataCache cache)
         {
             _metadataCache = cache;
             Options = options.Value;
+            Settings = settings.Value;
         }
         protected override Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -58,6 +59,11 @@ namespace DaJet.Agent.Service
                 return;
             }
 
+            if (Settings.ExchangePlans == null || Settings.ExchangePlans.Count == 0)
+            {
+                Settings.ExchangePlans = new List<string>() { "ПланОбмена.ПланОбменаДанными" };
+            }
+            
             GetExchangePlanSettingsWithRetry(out string thisNode, out List<string> exchangeNodes);
 
             FileLogger.Log($"This node is [{thisNode}]");
@@ -111,7 +117,7 @@ namespace DaJet.Agent.Service
                         Options.DatabaseProvider,
                         Options.ConnectionString);
 
-                    settings.ConfigureSelectScripts("ПланОбмена.ПланОбменаДанными", "РегистрСведений.НастройкиОбменаРИБ");
+                    settings.ConfigureSelectScripts(Settings.ExchangePlans[0]);
                     thisNode = settings.GetThisNode();
                     exchangeNodes = settings.GetExchangeNodes();
 

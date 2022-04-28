@@ -1,5 +1,6 @@
 ﻿using DaJet.Logging;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -9,11 +10,12 @@ namespace DaJet.Agent.Service
     internal sealed class MetadataCacheService : BackgroundService
     {
         private readonly IMetadataCache _cache;
-        private readonly int _updateTimeout = 300; // seconds
         private CancellationToken _cancellationToken;
-        public MetadataCacheService(IMetadataCache cache)
+        private DaJetAgentOptions Options { get; set; }
+        public MetadataCacheService(IMetadataCache cache, IOptions<DaJetAgentOptions> options)
         {
             _cache = cache;
+            Options = options.Value;
         }
         protected override Task ExecuteAsync(CancellationToken cancellationToken)
         {
@@ -29,7 +31,7 @@ namespace DaJet.Agent.Service
                 {
                     TryDoWork();
 
-                    Task.Delay(TimeSpan.FromSeconds(_updateTimeout)).Wait(_cancellationToken);
+                    Task.Delay(TimeSpan.FromSeconds(Options.RefreshTimeout)).Wait(_cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {

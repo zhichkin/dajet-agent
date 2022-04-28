@@ -1,4 +1,6 @@
-﻿namespace DaJet.Agent.Service
+﻿using System.Collections.Generic;
+
+namespace DaJet.Agent.Service
 {
     public sealed class AppSettings
     {
@@ -6,5 +8,6 @@
         public bool UseProducer { get; set; } = true;
         public bool UseConsumer { get; set; } = true;
         public string AppCatalog { get; set; } = string.Empty;
+        public List<string> ExchangePlans { get; set; } = new List<string>();
     }
 }

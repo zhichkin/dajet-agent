@@ -120,6 +120,7 @@ namespace DaJet.Agent.Service
 
             DaJetAgentOptions options = new DaJetAgentOptions()
             {
+                RefreshTimeout = settings.RefreshTimeout,
                 DatabaseProvider = settings.DatabaseSettings.DatabaseProvider,
                 ConnectionString = settings.DatabaseSettings.ConnectionString,
                 HostName = settings.MessageBrokerSettings.HostName,

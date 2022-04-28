@@ -7,6 +7,7 @@ namespace DaJet.Agent.Producer
 {
     public sealed class MessageProducerSettings
     {
+        public int RefreshTimeout { get; set; } = 300; // seconds
         public int CriticalErrorDelay { get; set; } = 180; // seconds
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();

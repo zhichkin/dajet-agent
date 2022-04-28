@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using ExchangePlanHelper = DaJet.RabbitMQ.ExchangePlanHelper;
+using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
 
 namespace DaJet.Agent.Consumer
 {
@@ -19,11 +19,13 @@ namespace DaJet.Agent.Consumer
         private const string INCOMING_QUEUE_NAME = "РегистрСведений.ВходящаяОчередьRabbitMQ";
         private const string DELAY_MESSAGE_TEMPLATE = "Message consumer service delay for {0} seconds.";
         private const string RETRY_MESSAGE_TEMPLATE = "Message consumer service will retry in {0} seconds.";
+        private AppSettings Options { get; set; }
         private MessageConsumerSettings Settings { get; set; }
-        public MessageConsumerService(IOptions<MessageConsumerSettings> options, IMetadataCache cache)
+        public MessageConsumerService(IOptions<AppSettings> options, IOptions<MessageConsumerSettings> settings, IMetadataCache cache)
         {
             _metadataCache = cache;
-            Settings = options.Value;
+            Options = options.Value;
+            Settings = settings.Value;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
@@ -67,6 +69,11 @@ namespace DaJet.Agent.Consumer
         {
             string uri = Settings.MessageBrokerSettings.BuildUri();
 
+            if (Options.ExchangePlans == null || Options.ExchangePlans.Count == 0)
+            {
+                Options.ExchangePlans = new List<string>() { "ПланОбмена.ПланОбменаДанными" };
+            }
+
             GetMessagingSettingsWithRetry(out List<string> queues, cancellationToken);
 
             using (RmqMessageConsumer consumer = new RmqMessageConsumer(uri, in queues))
@@ -95,9 +102,7 @@ namespace DaJet.Agent.Consumer
                         Settings.DatabaseSettings.DatabaseProvider,
                         Settings.DatabaseSettings.ConnectionString);
 
-                    settings.ConfigureSelectScripts("ПланОбмена.ПланОбменаДанными", "РегистрСведений.НастройкиОбменаРИБ");
-                    
-                    queues = settings.GetIncomingQueueNames();
+                    queues = settings.GetIncomingQueueNames(Options.ExchangePlans);
 
                     return;
                 }
