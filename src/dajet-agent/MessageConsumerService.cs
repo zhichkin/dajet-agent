@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using OptionsFactory = Microsoft.Extensions.Options.Options;
 using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
 
 namespace DaJet.Agent.Consumer
@@ -76,8 +77,17 @@ namespace DaJet.Agent.Consumer
 
             GetMessagingSettingsWithRetry(out List<string> queues, cancellationToken);
 
+            IOptions<RmqConsumerOptions> options = OptionsFactory.Create(
+                new RmqConsumerOptions()
+                {
+                    Queues = queues, //TODO: update from 1C exchange plans
+                    Heartbeat = Options.RefreshTimeout
+                });
+
             using (RmqMessageConsumer consumer = new RmqMessageConsumer(uri, in queues))
             {
+                consumer.Configure(options);
+
                 consumer.Initialize(
                     Settings.DatabaseSettings.DatabaseProvider,
                     Settings.DatabaseSettings.ConnectionString,
