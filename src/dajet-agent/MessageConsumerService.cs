@@ -118,7 +118,7 @@ namespace DaJet.Agent.Consumer
                 }
                 catch (Exception error)
                 {
-                    FileLogger.Log("Message producer service: failed to get messaging settings.");
+                    FileLogger.Log("Message consumer service: failed to get messaging settings.");
                     FileLogger.LogException(error);
                 }
 
