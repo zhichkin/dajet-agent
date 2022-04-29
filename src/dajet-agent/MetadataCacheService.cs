@@ -11,8 +11,8 @@ namespace DaJet.Agent.Service
     {
         private readonly IMetadataCache _cache;
         private CancellationToken _cancellationToken;
-        private DaJetAgentOptions Options { get; set; }
-        public MetadataCacheService(IMetadataCache cache, IOptions<DaJetAgentOptions> options)
+        private AppSettings Options { get; set; }
+        public MetadataCacheService(IMetadataCache cache, IOptions<AppSettings> options)
         {
             _cache = cache;
             Options = options.Value;

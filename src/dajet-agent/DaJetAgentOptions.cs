@@ -5,7 +5,6 @@ namespace DaJet.Agent.Service
 {
     internal class DaJetAgentOptions
     {
-        internal int RefreshTimeout { get; set; } = 300; // seconds
         internal string ConnectionString { get; set; } = string.Empty;
         internal DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
         internal string HostName { get; set; } = "localhost";

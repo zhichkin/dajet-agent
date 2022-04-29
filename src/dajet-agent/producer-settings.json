@@ -1,5 +1,4 @@
 ﻿{
-  "RefreshTimeout": 10,
   "CriticalErrorDelay": 30,
   "DatabaseSettings": {
     "DatabaseProvider": 0,

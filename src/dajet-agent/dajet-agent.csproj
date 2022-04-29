@@ -14,7 +14,7 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
-    <PackageReleaseNotes>Added new settings: ExchangePlans to AppSettings and RefreshTimeout to producer-settings.json for RabbitMQ Configurator.</PackageReleaseNotes>
+    <PackageReleaseNotes>Added new settings: RefreshTimeout and ExchangePlans to AppSettings.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

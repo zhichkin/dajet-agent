@@ -39,7 +39,7 @@ namespace DaJet.Agent.Service
                 {
                     TryDoWork();
 
-                    Task.Delay(TimeSpan.FromSeconds(Options.RefreshTimeout)).Wait(_cancellationToken);
+                    Task.Delay(TimeSpan.FromSeconds(Settings.RefreshTimeout)).Wait(_cancellationToken);
                 }
                 catch (OperationCanceledException)
                 {
@@ -129,7 +129,7 @@ namespace DaJet.Agent.Service
                     FileLogger.LogException(error);
                 }
 
-                Task.Delay(TimeSpan.FromSeconds(Options.RefreshTimeout)).Wait(_cancellationToken);
+                Task.Delay(TimeSpan.FromSeconds(Settings.RefreshTimeout)).Wait(_cancellationToken);
             }
         }
         private bool TryGetDispatcherTopic(in IRabbitMQHttpManager manager, out ExchangeInfo exchange)

@@ -8,6 +8,7 @@ namespace DaJet.Agent.Service
         public bool UseProducer { get; set; } = true;
         public bool UseConsumer { get; set; } = true;
         public string AppCatalog { get; set; } = string.Empty;
+        public int RefreshTimeout { get; set; } = 600; // seconds
         public List<string> ExchangePlans { get; set; } = new List<string>();
     }
 }
