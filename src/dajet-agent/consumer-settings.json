@@ -1,8 +1,10 @@
 ﻿{
   "CriticalErrorDelay": 30,
   "DatabaseSettings": {
-    "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True"
+    //"DatabaseProvider": 0,
+    //"ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True"
+    "DatabaseProvider": 1,
+    "ConnectionString": "Host=localhost;Port=5432;Database=dajet-messaging-pg;Username=postgres;Password=postgres"
   },
   "MessageBrokerSettings": {
     "HostName": "localhost",

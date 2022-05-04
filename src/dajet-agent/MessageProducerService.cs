@@ -19,7 +19,6 @@ namespace DaJet.Agent.Producer
     {
         private readonly IMetadataCache _metadataCache;
 
-        private const string OUTGOING_QUEUE_NAME = "РегистрСведений.ИсходящаяОчередьRabbitMQ";
         private const string DELAY_MESSAGE_TEMPLATE = "Message producer service delay for {0} seconds.";
         private const string RETRY_MESSAGE_TEMPLATE = "Message producer service will retry in {0} seconds.";
         private MessageProducerSettings Settings { get; set; }
@@ -123,11 +122,11 @@ namespace DaJet.Agent.Producer
                         throw new Exception("Failed to get metadata from cache.");
                     }
 
-                    queue = infoBase.GetApplicationObjectByName(OUTGOING_QUEUE_NAME);
+                    queue = infoBase.GetApplicationObjectByName(Settings.OutgoingQueueName);
                     
                     if (queue == null)
                     {
-                        throw new Exception($"Объект метаданных \"{OUTGOING_QUEUE_NAME}\" не найден.");
+                        throw new Exception($"Объект метаданных \"{Settings.OutgoingQueueName}\" не найден.");
                     }
 
                     DbInterfaceValidator validator = new DbInterfaceValidator();

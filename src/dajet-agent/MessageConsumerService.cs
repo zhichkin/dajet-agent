@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using OptionsFactory = Microsoft.Extensions.Options.Options;
 using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
+using System.Timers;
 
 namespace DaJet.Agent.Consumer
 {
@@ -17,9 +18,7 @@ namespace DaJet.Agent.Consumer
     {
         private readonly IMetadataCache _metadataCache;
 
-        private const string INCOMING_QUEUE_NAME = "РегистрСведений.ВходящаяОчередьRabbitMQ";
         private const string DELAY_MESSAGE_TEMPLATE = "Message consumer service delay for {0} seconds.";
-        private const string RETRY_MESSAGE_TEMPLATE = "Message consumer service will retry in {0} seconds.";
         private AppSettings Options { get; set; }
         private MessageConsumerSettings Settings { get; set; }
         public MessageConsumerService(IOptions<AppSettings> options, IOptions<MessageConsumerSettings> settings, IMetadataCache cache)
@@ -75,57 +74,79 @@ namespace DaJet.Agent.Consumer
                 Options.ExchangePlans = new List<string>() { "ПланОбмена.ПланОбменаДанными" };
             }
 
-            GetMessagingSettingsWithRetry(out List<string> queues, cancellationToken);
+            StartConsumerOptionsUpdateService();
 
-            IOptions<RmqConsumerOptions> options = OptionsFactory.Create(
-                new RmqConsumerOptions()
-                {
-                    Queues = queues, //TODO: update from 1C exchange plans
-                    Heartbeat = Options.RefreshTimeout
-                });
-
-            using (RmqMessageConsumer consumer = new RmqMessageConsumer(uri, in queues))
+            using (RmqMessageConsumer consumer = new RmqMessageConsumer(uri))
             {
-                consumer.Configure(options);
+                consumer.Configure(_options);
 
                 consumer.Initialize(
                     Settings.DatabaseSettings.DatabaseProvider,
                     Settings.DatabaseSettings.ConnectionString,
-                    INCOMING_QUEUE_NAME);
+                    Settings.IncomingQueueName);
 
                 consumer.Consume(cancellationToken, FileLogger.Log);
             }
+
+            StopConsumerOptionsUpdateService();
         }
-        private void GetMessagingSettingsWithRetry(out List<string> queues, CancellationToken cancellationToken)
+        
+
+
+        private System.Timers.Timer _timer;
+        private readonly IOptions<RmqConsumerOptions> _options = OptionsFactory.Create(new RmqConsumerOptions());
+        private List<string> GetConsumerQueueSettings()
         {
-            while (true)
+            List<string> queues = new List<string>();
+
+            try
             {
-                try
+                if (!_metadataCache.TryGet(out InfoBase infoBase))
                 {
-                    if (!_metadataCache.TryGet(out InfoBase infoBase))
-                    {
-                        throw new Exception("Failed to get metadata from cache.");
-                    }
-
-                    ExchangePlanHelper settings = new ExchangePlanHelper(
-                        in infoBase,
-                        Settings.DatabaseSettings.DatabaseProvider,
-                        Settings.DatabaseSettings.ConnectionString);
-
-                    queues = settings.GetIncomingQueueNames(Options.ExchangePlans);
-
-                    return;
-                }
-                catch (Exception error)
-                {
-                    FileLogger.Log("Message consumer service: failed to get messaging settings.");
-                    FileLogger.LogException(error);
+                    throw new Exception("Failed to get metadata from cache.");
                 }
 
-                FileLogger.Log(string.Format(RETRY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+                ExchangePlanHelper settings = new ExchangePlanHelper(
+                    in infoBase,
+                    Settings.DatabaseSettings.DatabaseProvider,
+                    Settings.DatabaseSettings.ConnectionString);
 
-                Task.Delay(TimeSpan.FromSeconds(Settings.CriticalErrorDelay), cancellationToken).Wait(cancellationToken);
+                queues = settings.GetIncomingQueueNames(Options.ExchangePlans);
             }
+            catch (Exception error)
+            {
+                FileLogger.Log("Message consumer service: failed to get messaging settings.");
+                FileLogger.LogException(error);
+            }
+
+            return queues;
+        }
+        private void StartConsumerOptionsUpdateService()
+        {
+            _options.Value.Queues = GetConsumerQueueSettings();
+            _options.Value.Heartbeat = Options.RefreshTimeout;
+
+            _timer = new System.Timers.Timer();
+            _timer.Elapsed += UpdateConsumerOptions;
+            _timer.Interval = Options.RefreshTimeout * 1000; // milliseconds
+            _timer.Start();
+        }
+        private void StopConsumerOptionsUpdateService()
+        {
+            try
+            {
+                _timer?.Stop();
+            }
+            finally
+            {
+                _timer?.Dispose();
+            }
+
+            _timer = null;
+        }
+        private void UpdateConsumerOptions(object sender, ElapsedEventArgs args)
+        {
+            _options.Value.Queues = GetConsumerQueueSettings();
         }
     }
 }

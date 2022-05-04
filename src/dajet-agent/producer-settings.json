@@ -1,8 +1,10 @@
 ﻿{
   "CriticalErrorDelay": 30,
   "DatabaseSettings": {
-    "DatabaseProvider": 0,
-    "ConnectionString": "Data Source=zhichkin;Initial Catalog=cerberus;Integrated Security=True",
+    //"DatabaseProvider": 0,
+    //"ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True",
+    "DatabaseProvider": 1,
+    "ConnectionString": "Host=localhost;Port=5432;Database=dajet-messaging-pg;Username=postgres;Password=postgres",
     "MessagesPerTransaction": 1000,
     "DatabaseQueryingPeriodicity": 15
   },
@@ -12,7 +14,9 @@
     "VirtualHost": "/",
     "UserName": "guest",
     "Password": "guest",
-    "TopicExchange": "DISPATCHER",
-    "ExchangeRole": 1
+    //"TopicExchange": "DISPATCHER",
+    //"ExchangeRole": 1
+    "TopicExchange": "AGGREGATOR",
+    "ExchangeRole": 0
   }
 }
