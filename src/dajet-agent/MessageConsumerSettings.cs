@@ -8,6 +8,7 @@ namespace DaJet.Agent.Consumer
     {
         public int CriticalErrorDelay { get; set; } = 180; // seconds
         public string IncomingQueueName { get; set; } = "РегистрСведений.ВходящаяОчередьRabbitMQ";
+        public bool UseVectorService { get; set; } = false;
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
     }

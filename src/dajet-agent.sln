@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31019.35
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent", "dajet-agent\dajet-agent.csproj", "{0D06B3DF-94B3-41AD-83CF-3E0CA50F8328}"
 EndProject
@@ -16,6 +16,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-benchmarks", "dajet-benchmarks\dajet-benchmarks.csproj", "{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-database-adapter", "dajet-database-adapter\dajet-database-adapter.csproj", "{F53E5C45-2E70-440C-8A68-B76808800CCC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-telegram-bot", "dajet-telegram-bot\dajet-telegram-bot.csproj", "{8634A869-6BF2-496A-83EE-272E2D891E01}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -51,6 +53,10 @@ Global
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8634A869-6BF2-496A-83EE-272E2D891E01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8634A869-6BF2-496A-83EE-272E2D891E01}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8634A869-6BF2-496A-83EE-272E2D891E01}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8634A869-6BF2-496A-83EE-272E2D891E01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

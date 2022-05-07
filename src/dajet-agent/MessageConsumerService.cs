@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using OptionsFactory = Microsoft.Extensions.Options.Options;
 using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
 using System.Timers;
+using System.IO;
 
 namespace DaJet.Agent.Consumer
 {
@@ -26,6 +27,12 @@ namespace DaJet.Agent.Consumer
             _metadataCache = cache;
             Options = options.Value;
             Settings = settings.Value;
+
+            if (Settings.UseVectorService)
+            {
+                _options.Value.UseVectorService = Settings.UseVectorService;
+                _options.Value.VectorDatabase = Path.Combine(Options.AppCatalog, "consumer-vector.db");
+            }
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {

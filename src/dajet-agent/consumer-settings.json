@@ -1,5 +1,6 @@
 ﻿{
   "CriticalErrorDelay": 30,
+  "UseVectorService": false,
   "DatabaseSettings": {
     //"DatabaseProvider": 0,
     //"ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True"
