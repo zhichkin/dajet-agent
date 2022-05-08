@@ -1,7 +1,5 @@
 ﻿using DaJet.Agent.Service;
-using DaJet.Data.Mapping;
 using DaJet.Data.Messaging;
-using DaJet.Json;
 using DaJet.Logging;
 using DaJet.Metadata;
 using DaJet.Metadata.Model;
@@ -10,8 +8,10 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using OptionsFactory = Microsoft.Extensions.Options.Options;
 
 namespace DaJet.Agent.Producer
 {
@@ -21,11 +21,20 @@ namespace DaJet.Agent.Producer
 
         private const string DELAY_MESSAGE_TEMPLATE = "Message producer service delay for {0} seconds.";
         private const string RETRY_MESSAGE_TEMPLATE = "Message producer service will retry in {0} seconds.";
+        private AppSettings Options { get; set; }
         private MessageProducerSettings Settings { get; set; }
-        public MessageProducerService(IOptions<MessageProducerSettings> options, IMetadataCache cache)
+        private readonly IOptions<RmqProducerOptions> _options = OptionsFactory.Create(new RmqProducerOptions());
+        public MessageProducerService(IOptions<AppSettings> options, IOptions<MessageProducerSettings> settings, IMetadataCache cache)
         {
             _metadataCache = cache;
-            Settings = options.Value;
+            Options = options.Value;
+            Settings = settings.Value;
+
+            if (Settings.UseVectorService)
+            {
+                _options.Value.UseVectorService = Settings.UseVectorService;
+                _options.Value.VectorDatabase = Path.Combine(Options.AppCatalog, "producer-vector.db");
+            }
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
@@ -72,19 +81,14 @@ namespace DaJet.Agent.Producer
         {
             string uri = Settings.MessageBrokerSettings.BuildUri();
 
-            GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken); // out InfoBase infoBase
-
-            //EntityDataMapperProvider provider = new EntityDataMapperProvider(
-            //    infoBase,
-            //    Settings.DatabaseSettings.DatabaseProvider,
-            //    Settings.DatabaseSettings.ConnectionString);
-
-            //EntityJsonSerializer serializer = new EntityJsonSerializer(provider);
+            GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken);
 
             using (IMessageConsumer consumer = GetMessageConsumer(in queue))
             {
                 using (RmqMessageProducer producer = new RmqMessageProducer(uri, string.Empty))
                 {
+                    producer.Configure(_options);
+
                     if (Settings.MessageBrokerSettings.ExchangeRole == 0)
                     {
                         producer.Initialize(ExchangeRoles.Aggregator);
@@ -94,7 +98,7 @@ namespace DaJet.Agent.Producer
                         producer.Initialize(ExchangeRoles.Dispatcher);
                     }
 
-                    int published = producer.Publish(consumer); // serializer
+                    int published = producer.Publish(consumer);
 
                     FileLogger.Log($"Published {published} messages.");
                 }
@@ -111,7 +115,7 @@ namespace DaJet.Agent.Producer
                 return new PgMessageConsumer(Settings.DatabaseSettings.ConnectionString, in queue);
             }
         }
-        private void GetMessagingSettingsWithRetry(out ApplicationObject queue, CancellationToken cancellationToken) // out InfoBase infoBase
+        private void GetMessagingSettingsWithRetry(out ApplicationObject queue, CancellationToken cancellationToken)
         {
             while (true)
             {

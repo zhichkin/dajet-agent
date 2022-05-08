@@ -14,11 +14,11 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/zhichkin/dajet-agent</PackageProjectUrl>
     <RepositoryUrl>https://github.com/zhichkin/dajet-agent</RepositoryUrl>
-    <PackageReleaseNotes>Consumer queue list update service is added.</PackageReleaseNotes>
+    <PackageReleaseNotes>Vector service added</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DaJet.RabbitMQ" Version="1.2.1" />
+    <PackageReference Include="DaJet.RabbitMQ" Version="1.2.2" />
     <PackageReference Include="DaJet.RabbitMQ.HttpApi" Version="1.2.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />

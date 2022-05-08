@@ -94,10 +94,19 @@ namespace DaJet.Agent.Service
 
             while (collision.NewVector > 0)
             {
-                _telegram.SendMessage(
+                string message =
                     $"COLLISION {collision.Timestamp:dd-MM-yyyy HH:mm:ss}\n" +
                     $"[{collision.Node}] {collision.Type}\n" +
-                    $"({collision.NewVector}) < ({collision.OldVector})");
+                    $"({collision.NewVector}) < ({collision.OldVector})";
+
+                try
+                {
+                    _telegram.SendMessage(message);
+                }
+                catch
+                {
+                    FileLogger.Log(message);
+                }
 
                 sent++;
 

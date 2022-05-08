@@ -2,10 +2,10 @@
   "CriticalErrorDelay": 30,
   "UseVectorService": false,
   "DatabaseSettings": {
-    //"DatabaseProvider": 0,
-    //"ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True"
-    "DatabaseProvider": 1,
-    "ConnectionString": "Host=localhost;Port=5432;Database=dajet-messaging-pg;Username=postgres;Password=postgres"
+    "DatabaseProvider": 0,
+    "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True"
+    //"DatabaseProvider": 1,
+    //"ConnectionString": "Host=localhost;Port=5432;Database=dajet-messaging-pg;Username=postgres;Password=postgres"
   },
   "MessageBrokerSettings": {
     "HostName": "localhost",
