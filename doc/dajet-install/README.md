@@ -12,7 +12,8 @@
 - Настроить файл [**consumer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/consumer-settings.json).
 
 > Файлы настроек должны находиться в каталоге установки службы DaJet Agent Service.
-> Кодировка фалов настроек должна быть UTF-8.
+>
+> Кодировка файлов настроек должна быть UTF-8.
 
 Описание файла **appsettings.json**.
 
