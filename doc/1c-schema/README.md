@@ -75,7 +75,7 @@
 }
 ```
 
-[**Эталонная подсистема для 1С**](https://github.com/zhichkin/dajet-agent/blob/main/1c/dajet_standard.cf)
+[**Эталонная подсистема для 1С** (файл cf)](https://github.com/zhichkin/dajet-agent/blob/main/1c/dajet_standard.cf)
 
 Для организации обмена данными можно использовать эталонную подсистему для 1С,
 которая использует формат [1С JDTO]() для записи и чтения сообщений.
