@@ -5,12 +5,12 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <RootNamespace>DaJet.Agent.CLI</RootNamespace>
     <AssemblyName>dajet-agent</AssemblyName>
-    <Version>4.1.0</Version>
-    <Description>Utility to generate configuration files to support DaJet.Agent.Service 4.1 - 5.2 versions.</Description>
+    <Version>4.1.1</Version>
+    <Description>Utility to generate configuration files to support DaJet.Agent.Service 4.1 and up versions.</Description>
     <Copyright>Zhichkin © 2021</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Authors>Zhichkin</Authors>
-    <PackageReleaseNotes>Updated to use DaJet.Metadata 3.1.9 and to support DaJet.Agent.Service 4.1 - 5.2 versions.</PackageReleaseNotes>
+    <PackageReleaseNotes>Updated to use DaJet.Metadata 3.1.9 and to support DaJet.Agent.Service 4.1 and up versions.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

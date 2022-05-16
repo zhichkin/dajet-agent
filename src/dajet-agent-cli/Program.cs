@@ -45,7 +45,7 @@ namespace DaJet.Agent.CLI
                 new Option<string>("--p", "User password if SQL Server authentication is used"),
                 new Option<FileInfo>("--o", "Catalog path to save settings files")
             };
-            command.Description = "DaJet Agent CLI 4.1.0 (settings files generation)";
+            command.Description = "DaJet Agent CLI 4.1.1 (settings files generation)";
             command.Handler = CommandHandler.Create<string, string, string, string, string, FileInfo>(ExecuteCommand);
             return command.Invoke(args);
         }
@@ -151,7 +151,8 @@ namespace DaJet.Agent.CLI
             settings.DatabaseSettings = new Producer.DatabaseSettings()
             {
                 DatabaseProvider = metadataService.DatabaseProvider,
-                ConnectionString = metadataService.ConnectionString
+                ConnectionString = metadataService.ConnectionString,
+                DatabaseQueryingPeriodicity = 5 // seconds
             };
 
             return settings;
