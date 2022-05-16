@@ -8,7 +8,7 @@
 
 Поддерживается работа с базами данных 1С под управлением СУБД Microsoft SQL Server и PostgreSQL.
 
-[Описание структуры входящих и исходящих очередей (регистров сведений) 1С](https://github.com/zhichkin/dajet-agent/tree/main/doc/1c-schema/readme.md)
+[Описание структуры входящих и исходящих очередей (регистров сведений) 1С](https://github.com/zhichkin/dajet-agent/blob/main/doc/1c-schema/README.md)
 
 [Установка DaJet Agent]()
 
