@@ -1,11 +1,11 @@
 ### Установка и настройка DaJet Agent
 
 Агент обмена данными логирует свою работу в файле **dajet-agent.log**,
-который автоматически создаётся в корневом каталоге исполняемого файла агента в случае его отсутствия.
+который автоматически создаётся в корневом каталоге исполняемого файла агента **DaJet.Agent.Service.exe** в случае его отсутствия.
 
 Агент обмена данными устанавливается отдельно для каждого узла обмена данными (базы данных СУБД).
 
-- [Скачать дистрибутив](https://github.com/zhichkin/dajet-agent/releases/).
+- [Скачать дистрибутив](https://github.com/zhichkin/dajet-agent/releases/), например, **dajet-agent-svc-x64-6.3.3**.
 - Распаковать архив в каталог установки. Исполняемый файл называется **DaJet.Agent.Service.exe**.
 - Настроить файл **appsettings.json** (см. ниже).
 - Настроить файл [**producer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/producer-settings.json).
@@ -49,3 +49,6 @@ sc create "DaJet Agent Service" binPath="D:\dajet-agent\DaJet.Agent.Service.exe"
 
 ## Важно!
 
+Публикация сообщений осуществляется в двух режимах: агрегатор и диспетчер (дистрибьютор).
+
+[Подробнее см. в описании версии 4.1.0](https://github.com/zhichkin/dajet-agent/releases/tag/svc-4.1)
