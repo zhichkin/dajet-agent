@@ -17,3 +17,12 @@
 |:---:|:---:|:---:|:---:|
 |![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue1.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue10.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue11.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue12.png)|
 
+**Входящие очереди**
+<table>
+  <tr>
+    <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue1.png"/></td>
+    <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue10.png"/></td>
+    <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue11.png"/></td>
+    <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue12.png"/></td>
+  </tr>
+</table>
