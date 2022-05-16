@@ -1,5 +1,6 @@
 ﻿{
   "CriticalErrorDelay": 30,
+  "OutgoingQueueName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
   "UseVectorService": false,
   "DatabaseSettings": {
     "DatabaseProvider": 0,
