@@ -11,6 +11,9 @@
 - Настроить файл [**producer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/producer-settings.json).
 - Настроить файл [**consumer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/consumer-settings.json).
 
+> Файлы настроек должны находиться в каталоге установки службы DaJet Agent Service.
+> Кодировка фалов настроек должна быть UTF-8.
+
 Описание файла **appsettings.json**.
 
 - **LogSize** - размер файла лога в байтах, по умолчанию равен 1 Mb, по достижению этого размера пересоздаётся.
