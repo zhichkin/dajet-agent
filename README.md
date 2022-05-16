@@ -10,9 +10,8 @@
 
 Служба DaJet Agent может работать под управлением Windows и Linux (поддерживается systemd).
 
-[Описание структуры входящих и исходящих очередей (регистров сведений) 1С](https://github.com/zhichkin/dajet-agent/blob/main/doc/1c-schema/README.md)
-
 [Установка DaJet Agent](https://github.com/zhichkin/dajet-agent/blob/main/doc/dajet-install/README.md)
 
 [Настройка RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/rabbitmq-setup/README.md)
 
+[Описание структуры входящих и исходящих очередей (регистров сведений) 1С](https://github.com/zhichkin/dajet-agent/blob/main/doc/1c-schema/README.md)
