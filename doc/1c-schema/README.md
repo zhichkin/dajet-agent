@@ -20,6 +20,12 @@
 **Входящие очереди**
 <table>
   <tr>
+    <th>Версия 1</th>
+    <th>Версия 10</th>
+    <th>Версия 11</th>
+    <th>Версия 12</th>
+  </tr>
+  <tr>
     <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue1.png"/></td>
     <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue10.png"/></td>
     <td valign="top"><img src="https://github.com/zhichkin/dajet-agent/blob/main/doc/images/IncomingQueue11.png"/></td>
