@@ -10,6 +10,7 @@
 - Настроить файл **appsettings.json** (см. ниже).
 - Настроить файл [**producer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/producer-settings.json).
 - Настроить файл [**consumer-settings.json**](https://github.com/zhichkin/dajet-agent/blob/main/src/dajet-agent/consumer-settings.json).
+- Агент обмена DaJet Agent готов к работе.
 
 > Файлы настроек должны находиться в каталоге установки службы DaJet Agent Service.
 >

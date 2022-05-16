@@ -15,3 +15,5 @@
 [Настройка RabbitMQ](https://github.com/zhichkin/dajet-agent/blob/main/doc/rabbitmq-setup/README.md)
 
 [Описание структуры входящих и исходящих очередей (регистров сведений) 1С](https://github.com/zhichkin/dajet-agent/blob/main/doc/1c-schema/README.md)
+
+[Telegram](https://t.me/dajet_studio_group)
