@@ -14,5 +14,6 @@
 **Исходящие очереди**
 
 |Версия 1|Версия 10|Версия 11|Версия 12|
+|:---:|:---:|:---:|:---:|
 |![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue1.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue10.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue11.png)|![](https://github.com/zhichkin/dajet-agent/blob/main/doc/images/OutgoingQueue12.png)|
 
