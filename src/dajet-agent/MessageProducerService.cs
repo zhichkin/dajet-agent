@@ -35,6 +35,10 @@ namespace DaJet.Agent.Producer
                 _options.Value.UseVectorService = Settings.UseVectorService;
                 _options.Value.VectorDatabase = Path.Combine(Options.AppCatalog, "producer-vector.db");
             }
+
+            _options.Value.ErrorLogRetention = Settings.ErrorLogRetention;
+            _options.Value.ErrorLogDatabase = Path.Combine(Options.AppCatalog, "producer-errors.db");
+            _options.Value.MessagesPerTransaction = Settings.DatabaseSettings.MessagesPerTransaction;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {

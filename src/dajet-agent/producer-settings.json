@@ -1,7 +1,8 @@
 ﻿{
   "CriticalErrorDelay": 30,
-  "OutgoingQueueName": "РегистрСведений.ИсходящаяОчередьRabbitMQ",
+  "OutgoingQueueName": "РегистрСведений.ИсходящаяОчередь10",
   "UseVectorService": false,
+  "ErrorLogRetention": 1, // hours
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True",

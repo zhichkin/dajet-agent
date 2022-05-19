@@ -10,6 +10,7 @@ namespace DaJet.Agent.Producer
         public int RefreshTimeout { get; set; } = 300; // seconds
         public int CriticalErrorDelay { get; set; } = 180; // seconds
         public bool UseVectorService { get; set; } = false;
+        public int ErrorLogRetention { get; set; } = 24 * 7; // one week in hours
         public string OutgoingQueueName { get; set; } = "РегистрСведений.ИсходящаяОчередьRabbitMQ";
         public DatabaseSettings DatabaseSettings { get; set; } = new DatabaseSettings();
         public MessageBrokerSettings MessageBrokerSettings { get; set; } = new MessageBrokerSettings();
