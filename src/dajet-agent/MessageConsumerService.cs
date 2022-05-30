@@ -12,6 +12,7 @@ using OptionsFactory = Microsoft.Extensions.Options.Options;
 using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
 using System.Timers;
 using System.IO;
+using DaJet.Data.Messaging;
 
 namespace DaJet.Agent.Consumer
 {
@@ -20,6 +21,7 @@ namespace DaJet.Agent.Consumer
         private readonly IMetadataCache _metadataCache;
 
         private const string DELAY_MESSAGE_TEMPLATE = "Message consumer service delay for {0} seconds.";
+        private const string RETRY_MESSAGE_TEMPLATE = "Message consumer service will retry in {0} seconds.";
         private AppSettings Options { get; set; }
         private MessageConsumerSettings Settings { get; set; }
         public MessageConsumerService(IOptions<AppSettings> options, IOptions<MessageConsumerSettings> settings, IMetadataCache cache)
@@ -74,6 +76,8 @@ namespace DaJet.Agent.Consumer
         }
         private void TryDoWork(CancellationToken cancellationToken)
         {
+            ConfigureIncomingQueueWithRetry(cancellationToken);
+
             string uri = Settings.MessageBrokerSettings.BuildUri();
 
             if (Options.ExchangePlans == null || Options.ExchangePlans.Count == 0)
@@ -97,8 +101,69 @@ namespace DaJet.Agent.Consumer
 
             StopConsumerOptionsUpdateService();
         }
-        
 
+        private void ConfigureIncomingQueueWithRetry(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
+                    {
+                        throw new Exception("Failed to get metadata from cache.");
+                    }
+
+                    ApplicationObject queue = infoBase.GetApplicationObjectByName(Settings.IncomingQueueName);
+
+                    if (queue == null)
+                    {
+                        throw new Exception($"Объект метаданных \"{Settings.IncomingQueueName}\" не найден.");
+                    }
+
+                    DbInterfaceValidator validator = new DbInterfaceValidator();
+                    int version = validator.GetIncomingInterfaceVersion(in queue);
+
+                    if (version < 1)
+                    {
+                        throw new Exception("Не удалось определить версию контракта данных.");
+                    }
+
+                    if (ConfigureIncomingQueue(version, in queue)) { return; }
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log("Message consumer service: failed to get messaging settings.");
+                    FileLogger.LogException(error);
+                }
+
+                FileLogger.Log(string.Format(RETRY_MESSAGE_TEMPLATE, Settings.CriticalErrorDelay));
+
+                Task.Delay(TimeSpan.FromSeconds(Settings.CriticalErrorDelay), cancellationToken).Wait(cancellationToken);
+            }
+        }
+        private bool ConfigureIncomingQueue(int version, in ApplicationObject queue)
+        {
+            DbQueueConfigurator configurator = new DbQueueConfigurator(
+                version,
+                Settings.DatabaseSettings.DatabaseProvider,
+                Settings.DatabaseSettings.ConnectionString);
+
+            configurator.ConfigureIncomingMessageQueue(in queue, out List<string> errors);
+
+            if (errors.Count > 0)
+            {
+                foreach (string error in errors)
+                {
+                    FileLogger.Log(error);
+                }
+
+                return false;
+            }
+
+            FileLogger.Log("Входящая очередь настроена успешно.");
+
+            return true;
+        }
 
         private System.Timers.Timer _timer;
         private readonly IOptions<RmqConsumerOptions> _options = OptionsFactory.Create(new RmqConsumerOptions());
