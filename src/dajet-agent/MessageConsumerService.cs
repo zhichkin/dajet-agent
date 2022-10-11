@@ -35,6 +35,13 @@ namespace DaJet.Agent.Consumer
                 _options.Value.UseVectorService = Settings.UseVectorService;
                 _options.Value.VectorDatabase = Path.Combine(Options.AppCatalog, "consumer-vector.db");
             }
+
+            if (Settings.UseConsumerLog)
+            {
+                _options.Value.UseLog = Settings.UseConsumerLog;
+                _options.Value.LogDatabase = Path.Combine(Options.AppCatalog, _options.Value.LogDatabase);
+                _options.Value.LogRetention = Settings.ConsumerLogRetention;
+            }
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
