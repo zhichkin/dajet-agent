@@ -1,8 +1,6 @@
 ﻿{
   "CriticalErrorDelay": 30,
   "OutgoingQueueName": "РегистрСведений.ИсходящаяОчередь10",
-  "UseVectorService": false,
-  "ErrorLogRetention": 1, // hours
   "DatabaseSettings": {
     "DatabaseProvider": 0,
     "ConnectionString": "Data Source=zhichkin;Initial Catalog=dajet-messaging-ms;Integrated Security=True",
@@ -17,7 +15,7 @@
     "VirtualHost": "/",
     "UserName": "guest",
     "Password": "guest",
-    "TopicExchange": "DISPATCHER",
+    "TopicExchange": "РИБ.ERP", //"DISPATCHER",
     "ExchangeRole": 1
     //"TopicExchange": "AGGREGATOR",
     //"ExchangeRole": 0

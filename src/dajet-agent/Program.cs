@@ -83,6 +83,11 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<MessageConsumerService>();
             }
 
+            if (AppSettings.UseDeliveryTraking)
+            {
+                services.AddHostedService<DeliveryTrackingService>();
+            }
+
             if (AppSettings.UseTelegram)
             {
                 services.AddHostedService<DaJetTelegramBotService>();

@@ -7,6 +7,7 @@ namespace DaJet.Agent.Service
         public int LogSize { get; set; } = 1024 * 1024; // kilobytes
         public bool UseProducer { get; set; } = true;
         public bool UseConsumer { get; set; } = true;
+        public bool UseDeliveryTraking { get; set; } = false;
         public bool UseTelegram { get; set; } = false;
         public string BotToken { get; set; } = string.Empty;
         public string BotChannel { get; set; } = string.Empty;

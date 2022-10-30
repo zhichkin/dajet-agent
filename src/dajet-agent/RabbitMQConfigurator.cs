@@ -54,6 +54,8 @@ namespace DaJet.Agent.Service
         }
         private void TryDoWork()
         {
+            ConfigureDeliveryTrackingQueue();
+
             if (Options.ExchangeRole != ExchangeRoles.Dispatcher)
             {
                 return;
@@ -213,6 +215,31 @@ namespace DaJet.Agent.Service
                     manager.CreateBinding(aggregator, queue, exchangeNode).Wait();
 
                     FileLogger.Log($"Binding from [{aggregator.Name}] to [{queue.Name}] with routing key [{exchangeNode}] created successfully.");
+                }
+            }
+        }
+        private void ConfigureDeliveryTrackingQueue()
+        {
+            if (!Settings.UseDeliveryTraking)
+            {
+                return;
+            }
+
+            string queueName = "dajet-agent-monitor";
+
+            using (IRabbitMQHttpManager manager = new RabbitMQHttpManager()
+                .UseHostName(Options.HostName)
+                .UseVirtualHost(Options.VirtualHost)
+                .UseUserName(Options.UserName)
+                .UsePassword(Options.Password))
+            {
+                QueueInfo queue = manager.GetQueue(queueName).Result;
+
+                if (queue == null)
+                {
+                    manager.CreateQueue(queueName).Wait();
+                    queue = manager.GetQueue(queueName).Result;
+                    FileLogger.Log($"Queue [{queue.Name}] created successfully.");
                 }
             }
         }

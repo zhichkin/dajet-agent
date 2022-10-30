@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using ExchangePlanHelper = DaJet.Agent.Service.ExchangePlanHelper;
 using OptionsFactory = Microsoft.Extensions.Options.Options;
 
 namespace DaJet.Agent.Producer
@@ -29,6 +30,8 @@ namespace DaJet.Agent.Producer
             _metadataCache = cache;
             Options = options.Value;
             Settings = settings.Value;
+            
+            _options.Value.UseDeliveryTracking = Options.UseDeliveryTraking;
 
             if (Settings.UseVectorService)
             {
@@ -84,6 +87,11 @@ namespace DaJet.Agent.Producer
         private void TryDoWork(CancellationToken cancellationToken)
         {
             string uri = Settings.MessageBrokerSettings.BuildUri();
+
+            if (Options.ExchangePlans == null || Options.ExchangePlans.Count == 0)
+            {
+                Options.ExchangePlans = new List<string>() { "ПланОбмена.ПланОбменаДанными" };
+            }
 
             GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken);
 
@@ -144,6 +152,12 @@ namespace DaJet.Agent.Producer
                     {
                         throw new Exception("Не удалось определить версию контракта данных.");
                     }
+
+                    ExchangePlanHelper settings = new ExchangePlanHelper(in infoBase,
+                        Settings.DatabaseSettings.DatabaseProvider,
+                        Settings.DatabaseSettings.ConnectionString);
+                    settings.ConfigureSelectScripts(Options.ExchangePlans[0]);
+                    _options.Value.ThisNode = settings.GetThisNode();
 
                     if (ConfigureOutgoingQueue(version, in queue)) { return; }
                 }

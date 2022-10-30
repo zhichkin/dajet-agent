@@ -24,11 +24,15 @@ namespace DaJet.Agent.Consumer
         private const string RETRY_MESSAGE_TEMPLATE = "Message consumer service will retry in {0} seconds.";
         private AppSettings Options { get; set; }
         private MessageConsumerSettings Settings { get; set; }
+        private System.Timers.Timer _timer;
+        private readonly IOptions<RmqConsumerOptions> _options = OptionsFactory.Create(new RmqConsumerOptions());
         public MessageConsumerService(IOptions<AppSettings> options, IOptions<MessageConsumerSettings> settings, IMetadataCache cache)
         {
             _metadataCache = cache;
             Options = options.Value;
             Settings = settings.Value;
+
+            _options.Value.UseDeliveryTracking = Options.UseDeliveryTraking;
 
             if (Settings.UseVectorService)
             {
@@ -83,14 +87,14 @@ namespace DaJet.Agent.Consumer
         }
         private void TryDoWork(CancellationToken cancellationToken)
         {
-            ConfigureIncomingQueueWithRetry(cancellationToken);
-
             string uri = Settings.MessageBrokerSettings.BuildUri();
 
             if (Options.ExchangePlans == null || Options.ExchangePlans.Count == 0)
             {
                 Options.ExchangePlans = new List<string>() { "ПланОбмена.ПланОбменаДанными" };
             }
+
+            ConfigureIncomingQueueWithRetry(cancellationToken);
 
             StartConsumerOptionsUpdateService();
 
@@ -135,6 +139,12 @@ namespace DaJet.Agent.Consumer
                         throw new Exception("Не удалось определить версию контракта данных.");
                     }
 
+                    ExchangePlanHelper settings = new ExchangePlanHelper(in infoBase,
+                        Settings.DatabaseSettings.DatabaseProvider,
+                        Settings.DatabaseSettings.ConnectionString);
+                    settings.ConfigureSelectScripts(Options.ExchangePlans[0]);
+                    _options.Value.ThisNode = settings.GetThisNode();
+
                     if (ConfigureIncomingQueue(version, in queue)) { return; }
                 }
                 catch (Exception error)
@@ -172,8 +182,6 @@ namespace DaJet.Agent.Consumer
             return true;
         }
 
-        private System.Timers.Timer _timer;
-        private readonly IOptions<RmqConsumerOptions> _options = OptionsFactory.Create(new RmqConsumerOptions());
         private List<string> GetConsumerQueueSettings()
         {
             List<string> queues = new List<string>();
