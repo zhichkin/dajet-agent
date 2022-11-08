@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using DaJet.Metadata;
+using System.Collections.Generic;
 
 namespace DaJet.Agent.Service
 {
@@ -15,5 +16,9 @@ namespace DaJet.Agent.Service
         public int RefreshTimeout { get; set; } = 600; // seconds
         public List<string> ExchangePlans { get; set; } = new List<string>();
         internal string ThisNode { get; set; } = string.Empty;
+        public string MonitorQueueName { get; set; } = string.Empty;
+        public string MessageBrokerUri { get; set; } = string.Empty;
+        public string ConnectionString { get; set; } = string.Empty;
+        internal DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
     }
 }

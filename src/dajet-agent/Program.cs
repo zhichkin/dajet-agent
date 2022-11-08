@@ -83,6 +83,11 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<DeliveryTrackingService>();
             }
 
+            if (!string.IsNullOrWhiteSpace(AppSettings.MonitorQueueName))
+            {
+                services.AddHostedService<DeliveryTrackingConsumer>();
+            }
+
             if (AppSettings.UseProducer)
             {
                 ConfigureProducerSettings(services);
