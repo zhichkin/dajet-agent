@@ -220,7 +220,7 @@ namespace DaJet.Agent.Service
         }
         private void ConfigureDeliveryTrackingQueue()
         {
-            if (!Settings.UseDeliveryTraking)
+            if (!Settings.UseDeliveryTracking)
             {
                 return;
             }

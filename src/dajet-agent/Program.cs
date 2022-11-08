@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
@@ -40,6 +41,11 @@ namespace DaJet.Agent.Service
             config.Bind(AppSettings);
 
             AppSettings.AppCatalog = catalogPath;
+
+            if (AppSettings.ExchangePlans == null || AppSettings.ExchangePlans.Count == 0)
+            {
+                AppSettings.ExchangePlans = new List<string>() { "ѕланќбмена.ѕланќбменаƒанными" };
+            }
         }
         private static IHostBuilder CreateHostBuilder()
         {
@@ -69,7 +75,13 @@ namespace DaJet.Agent.Service
             services.AddSingleton<IMetadataCache, MetadataCache>();
 
             ConfigureDaJetAgentOptions(services);
+
             services.AddHostedService<RabbitMQConfigurator>();
+
+            if (AppSettings.UseDeliveryTracking)
+            {
+                services.AddHostedService<DeliveryTrackingService>();
+            }
 
             if (AppSettings.UseProducer)
             {
@@ -83,15 +95,10 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<MessageConsumerService>();
             }
 
-            if (AppSettings.UseDeliveryTraking)
-            {
-                services.AddHostedService<DeliveryTrackingService>();
-            }
-
-            if (AppSettings.UseTelegram)
-            {
-                services.AddHostedService<DaJetTelegramBotService>();
-            }
+            //if (AppSettings.UseTelegram)
+            //{
+            //    services.AddHostedService<DaJetTelegramBotService>();
+            //}
 
             #region "Deprecated version"
 
@@ -139,7 +146,8 @@ namespace DaJet.Agent.Service
                 Password = settings.MessageBrokerSettings.Password,
                 ExchangeRole = (settings.MessageBrokerSettings.ExchangeRole == 0
                 ? ExchangeRoles.Aggregator
-                : ExchangeRoles.Dispatcher)
+                : ExchangeRoles.Dispatcher),
+                UseDeliveryTracking = AppSettings.UseDeliveryTracking
             };
 
             services.AddSingleton(Options.Create(options));

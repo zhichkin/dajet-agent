@@ -32,8 +32,6 @@ namespace DaJet.Agent.Consumer
             Options = options.Value;
             Settings = settings.Value;
 
-            _options.Value.UseDeliveryTracking = Options.UseDeliveryTraking;
-
             if (Settings.UseVectorService)
             {
                 _options.Value.UseVectorService = Settings.UseVectorService;
@@ -97,6 +95,9 @@ namespace DaJet.Agent.Consumer
             ConfigureIncomingQueueWithRetry(cancellationToken);
 
             StartConsumerOptionsUpdateService();
+
+            _options.Value.ThisNode = Options.ThisNode;
+            _options.Value.UseDeliveryTracking = Options.UseDeliveryTracking;
 
             using (RmqMessageConsumer consumer = new RmqMessageConsumer(uri))
             {

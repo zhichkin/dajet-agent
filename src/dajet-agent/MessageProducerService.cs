@@ -30,8 +30,6 @@ namespace DaJet.Agent.Producer
             _metadataCache = cache;
             Options = options.Value;
             Settings = settings.Value;
-            
-            _options.Value.UseDeliveryTracking = Options.UseDeliveryTraking;
 
             if (Settings.UseVectorService)
             {
@@ -94,6 +92,11 @@ namespace DaJet.Agent.Producer
             }
 
             GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken);
+
+            _options.Value.ThisNode = Options.ThisNode;
+            _options.Value.UseDeliveryTracking = Options.UseDeliveryTracking;
+            _options.Value.Provider = Settings.DatabaseSettings.DatabaseProvider;
+            _options.Value.ConnectionString = Settings.DatabaseSettings.ConnectionString;
 
             using (IMessageConsumer consumer = GetMessageConsumer(in queue))
             {

@@ -1,6 +1,6 @@
-﻿using DaJet.Agent.Producer;
-using DaJet.Logging;
+﻿using DaJet.Logging;
 using DaJet.Metadata;
+using DaJet.Metadata.Model;
 using DaJet.RabbitMQ;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -12,19 +12,15 @@ namespace DaJet.Agent.Service
 {
     internal sealed class DeliveryTrackingService : BackgroundService
     {
-        private readonly MessageBrokerSettings _settings;
+        private readonly AppSettings _settings;
+        private readonly DaJetAgentOptions _options;
+        private readonly IMetadataCache _metadataCache;
         private const string DELIVERY_TRACKING_QUEUE_NAME = "dajet-agent-monitor";
-        private const string ERROR_MESSAGE_TEMPLATE = "[Delivery tracking] {0}";
-        public DeliveryTrackingService(IOptions<MessageProducerSettings> settings)
+        public DeliveryTrackingService(IOptions<AppSettings> settings, IOptions<DaJetAgentOptions> options, IMetadataCache cache)
         {
-            _settings = new MessageBrokerSettings()
-            {
-                HostName = settings.Value.MessageBrokerSettings.HostName,
-                PortNumber = settings.Value.MessageBrokerSettings.PortNumber,
-                VirtualHost = settings.Value.MessageBrokerSettings.VirtualHost,
-                UserName = settings.Value.MessageBrokerSettings.UserName,
-                Password = settings.Value.MessageBrokerSettings.Password
-            };
+            _options = options.Value;
+            _settings = settings.Value;
+            _metadataCache = cache;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
@@ -41,6 +37,9 @@ namespace DaJet.Agent.Service
         }
         protected override Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            // Block execution until completed
+            ConfigureDatabaseWithRetry(cancellationToken);
+            ConfigureThisNodeCodeWithRetry(cancellationToken);
             // Running the service in the background
             _ = Task.Run(async () => { await DoWork(cancellationToken); }, cancellationToken);
             // Return completed task to let other services to run
@@ -63,13 +62,90 @@ namespace DaJet.Agent.Service
         }
         private void TryDoWork(CancellationToken cancellationToken)
         {
+            int consumed;
             int published = 0;
-            string uri = _settings.BuildUri();
-            using (EventTracker tracker = new EventTracker())
+            
+            string uri = _options.GetRabbitMQUri();
+
+            IOptions<RmqProducerOptions> options = Options.Create(new RmqProducerOptions()
             {
-                //published = tracker.Publish(uri, DELIVERY_TRACKING_QUEUE_NAME, cancellationToken);
+                ThisNode = _options.ThisNode,
+                Provider = _options.DatabaseProvider,
+                ConnectionString = _options.ConnectionString,
+                UseDeliveryTracking = true
+            });
+
+            do
+            {
+                using (RmqMessageProducer producer = new RmqMessageProducer(uri, DELIVERY_TRACKING_QUEUE_NAME))
+                {
+                    producer.Configure(options);
+                    producer.Initialize();
+                    consumed = producer.PublishDeliveryTrackingEvents(cancellationToken);
+                    published += consumed;
+                }
             }
+            while (consumed > 0 && !cancellationToken.IsCancellationRequested);
+
             FileLogger.Log($"[Delivery tracking] Published {published} events.");
+        }
+        private DeliveryTracker CreateDeliveryTracker()
+        {
+            if (_options.DatabaseProvider == DatabaseProvider.SQLServer)
+            {
+                return new MsDeliveryTracker(_options.ConnectionString);
+            }
+            return new PgDeliveryTracker(_options.ConnectionString);
+        }
+        private void ConfigureDatabaseWithRetry(CancellationToken cancellationToken)
+        {
+            DeliveryTracker tracker = CreateDeliveryTracker();
+            do
+            {
+                try
+                {
+                    tracker.ConfigureDatabase();
+                    FileLogger.Log($"[Delivery tracking] database configured successfully.");
+                    return;
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log($"[Delivery tracking] failed to configure database: {ExceptionHelper.GetErrorText(error)}");
+                }
+                Task.Delay(TimeSpan.FromSeconds(10)).Wait(cancellationToken);
+            }
+            while (!cancellationToken.IsCancellationRequested);
+        }
+        private void ConfigureThisNodeCodeWithRetry(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
+                    {
+                        throw new Exception("Failed to get metadata from cache.");
+                    }
+
+                    ExchangePlanHelper publication = new ExchangePlanHelper(
+                        in infoBase,
+                        _options.DatabaseProvider,
+                        _options.ConnectionString);
+
+                    publication.ConfigureSelectScripts(_settings.ExchangePlans[0]);
+                    
+                    _options.ThisNode = publication.GetThisNode();
+                    _settings.ThisNode = _options.ThisNode;
+
+                    return;
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log("Failed to get exchange plan settings.");
+                    FileLogger.LogException(error);
+                }
+                Task.Delay(TimeSpan.FromSeconds(10)).Wait(cancellationToken);
+            }
         }
     }
 }
