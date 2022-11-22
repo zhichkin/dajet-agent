@@ -64,8 +64,6 @@ namespace DaJet.Agent.Service
         {
             int consumed;
             int published = 0;
-            
-            string uri = _options.GetRabbitMQUri();
 
             IOptions<RmqProducerOptions> options = Options.Create(new RmqProducerOptions()
             {
@@ -77,7 +75,8 @@ namespace DaJet.Agent.Service
 
             do
             {
-                using (RmqMessageProducer producer = new RmqMessageProducer(uri, DELIVERY_TRACKING_QUEUE_NAME))
+                using (RmqMessageProducer producer = new RmqMessageProducer(
+                    _settings.MessageBrokerUri, DELIVERY_TRACKING_QUEUE_NAME))
                 {
                     producer.Configure(options);
                     producer.Initialize();

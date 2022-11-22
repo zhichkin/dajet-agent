@@ -100,11 +100,6 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<MessageConsumerService>();
             }
 
-            //if (AppSettings.UseTelegram)
-            //{
-            //    services.AddHostedService<DaJetTelegramBotService>();
-            //}
-
             #region "Deprecated version"
 
             //services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
