@@ -5,20 +5,6 @@ VisualStudioVersion = 17.1.32421.90
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent", "dajet-agent\dajet-agent.csproj", "{0D06B3DF-94B3-41AD-83CF-3E0CA50F8328}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-producer", "dajet-agent-producer\dajet-agent-producer.csproj", "{B2C0E5D4-D498-4E43-8F25-92DD0F67CCA8}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-consumer", "dajet-agent-consumer\dajet-agent-consumer.csproj", "{B36EDC1B-E887-4DDB-8712-5DBD9B769B41}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-utilities", "dajet-utilities\dajet-utilities.csproj", "{12D6B94C-94F0-46E4-A92C-DB4740BAB311}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-agent-cli", "dajet-agent-cli\dajet-agent-cli.csproj", "{753E9C00-509C-48C5-A8E8-50C922D158B9}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-benchmarks", "dajet-benchmarks\dajet-benchmarks.csproj", "{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-database-adapter", "dajet-database-adapter\dajet-database-adapter.csproj", "{F53E5C45-2E70-440C-8A68-B76808800CCC}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dajet-telegram-bot", "dajet-telegram-bot\dajet-telegram-bot.csproj", "{8634A869-6BF2-496A-83EE-272E2D891E01}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,34 +15,6 @@ Global
 		{0D06B3DF-94B3-41AD-83CF-3E0CA50F8328}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D06B3DF-94B3-41AD-83CF-3E0CA50F8328}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0D06B3DF-94B3-41AD-83CF-3E0CA50F8328}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B2C0E5D4-D498-4E43-8F25-92DD0F67CCA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B2C0E5D4-D498-4E43-8F25-92DD0F67CCA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B2C0E5D4-D498-4E43-8F25-92DD0F67CCA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B2C0E5D4-D498-4E43-8F25-92DD0F67CCA8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B36EDC1B-E887-4DDB-8712-5DBD9B769B41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B36EDC1B-E887-4DDB-8712-5DBD9B769B41}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B36EDC1B-E887-4DDB-8712-5DBD9B769B41}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B36EDC1B-E887-4DDB-8712-5DBD9B769B41}.Release|Any CPU.Build.0 = Release|Any CPU
-		{12D6B94C-94F0-46E4-A92C-DB4740BAB311}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{12D6B94C-94F0-46E4-A92C-DB4740BAB311}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{12D6B94C-94F0-46E4-A92C-DB4740BAB311}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{12D6B94C-94F0-46E4-A92C-DB4740BAB311}.Release|Any CPU.Build.0 = Release|Any CPU
-		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{753E9C00-509C-48C5-A8E8-50C922D158B9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9E27F3C3-57FD-48F3-9B56-A4DC7760403D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F53E5C45-2E70-440C-8A68-B76808800CCC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8634A869-6BF2-496A-83EE-272E2D891E01}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8634A869-6BF2-496A-83EE-272E2D891E01}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8634A869-6BF2-496A-83EE-272E2D891E01}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8634A869-6BF2-496A-83EE-272E2D891E01}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,4 +1,5 @@
 using DaJet.Agent.Consumer;
+using DaJet.Agent.Kafka.Producer;
 using DaJet.Agent.Producer;
 using DaJet.Logging;
 using DaJet.RabbitMQ;
@@ -100,29 +101,10 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<MessageConsumerService>();
             }
 
-            #region "Deprecated version"
-
-            //services.AddSingleton<IDatabaseConfigurator, DatabaseConfigurator>();
-
-            //if (AppSettings.UseProducer)
-            //{
-            //    ConfigureProducerSettings(services);
-            //    services
-            //        .AddSingleton<IMessageProducer, TopicMessageProducer>()
-            //        .AddSingleton<IDatabaseMessageConsumer, DatabaseMessageConsumer>()
-            //        .AddHostedService<MessageProducerService>();
-            //}
-
-            //if (AppSettings.UseConsumer)
-            //{
-            //    ConfigureConsumerSettings(services);
-            //    services
-            //        .AddSingleton<IMessageConsumer, MessageConsumer>()
-            //        .AddSingleton<IDatabaseMessageProducer, DatabaseMessageProducer>()
-            //        .AddHostedService<MessageConsumerService>();
-            //}
-
-            #endregion
+            if (AppSettings.Kafka.Producer.IsActive)
+            {
+                services.AddHostedService<KafkaProducerService>();
+            }
         }
         private static void ConfigureDaJetAgentOptions(IServiceCollection services)
         {

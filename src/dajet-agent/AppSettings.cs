@@ -17,5 +17,20 @@ namespace DaJet.Agent.Service
         public string MessageBrokerUri { get; set; } = string.Empty;
         public string ConnectionString { get; set; } = string.Empty;
         internal DatabaseProvider DatabaseProvider { get; set; } = DatabaseProvider.SQLServer;
+        public KafkaSettings Kafka { get; set; } = new KafkaSettings();
+    }
+    public sealed class KafkaSettings
+    {
+        public KafkaProducerSettings Producer { get; set; } = new KafkaProducerSettings();
+    }
+    public sealed class KafkaProducerSettings
+    {
+        public bool IsActive { get; set; } = false;
+        public int IdleDelay { get; set; } = 60; // seconds
+        public int ErrorDelay { get; set; } = 300; // seconds
+        public string ConnectionString { get; set; } = string.Empty;
+        public string OutgoingQueueName { get; set; } = string.Empty;
+        public Dictionary<string, string> Topics { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
     }
 }
