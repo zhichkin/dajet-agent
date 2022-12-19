@@ -1,5 +1,6 @@
 ﻿using DaJet.Metadata;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace DaJet.Agent.Service
 {
@@ -25,6 +26,7 @@ namespace DaJet.Agent.Service
     }
     public sealed class KafkaProducerSettings
     {
+        public Assembly ErpModel { get; set; }
         public bool IsActive { get; set; } = false;
         public int IdleDelay { get; set; } = 60; // seconds
         public int ErrorDelay { get; set; } = 300; // seconds

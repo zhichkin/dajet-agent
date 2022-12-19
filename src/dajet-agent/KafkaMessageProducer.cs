@@ -2,7 +2,10 @@
 using DaJet.Agent.Service;
 using DaJet.Data.Messaging;
 using DaJet.Logging;
+using DaJet.ProtoBuf;
 using System;
+using System.Reflection;
+using System.Runtime.Loader;
 using System.Threading;
 
 namespace DaJet.Agent.Kafka.Producer
@@ -46,10 +49,12 @@ namespace DaJet.Agent.Kafka.Producer
 
                 foreach (OutgoingMessageDataMapper message in consumer.Select())
                 {
-                    if (!_settings.Topics.TryGetValue(message.MessageType, out _topic))
-                    {
-                        throw new InvalidOperationException($"[Kafka] Producer topic is not found for message type \"{message.MessageType}\".");
-                    }
+                    //if (!_settings.Topics.TryGetValue(message.MessageType, out _topic))
+                    //{
+                    //    throw new InvalidOperationException($"[Kafka] Producer topic is not found for message type \"{message.MessageType}\".");
+                    //}
+
+                    byte[] body = GetMessageBody(in message);
 
                     //_message.Headers = input.Headers;
                     _message.Value = message.MessageBody;
@@ -116,6 +121,19 @@ namespace DaJet.Agent.Kafka.Producer
             _produced = 0;
             _message.Value = null!;
             _message.Headers = null;
+        }
+
+        private byte[] GetMessageBody(in OutgoingMessageDataMapper message)
+        {
+            if (_settings.ErpModel == null)
+            {
+                return null;
+            }
+
+            string type = message.MessageType;
+            string body = message.MessageBody;
+
+            return ProtobufConverter.ConvertJsonToProtobuf(_settings.ErpModel, in type, in body);
         }
     }
 }
