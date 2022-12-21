@@ -2,7 +2,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 
 namespace DaJet.ProtoBuf
@@ -11,7 +10,7 @@ namespace DaJet.ProtoBuf
     {
         internal static byte[] ConvertJsonToProtobuf(Assembly assembly, in string messageType, in string messageBody)
         {
-            Type type = assembly.GetType($"erp_model.{messageType}");
+            Type type = assembly.GetType($"EntityModel.{messageType}");
 
             if (type == null)
             {
@@ -29,7 +28,7 @@ namespace DaJet.ProtoBuf
             {
                 Serializer.Serialize(memory, entity);
 
-                //string outputFile = "C:\\temp\\proto\\json\\test_message.bin";
+                //string outputFile = "C:\\test\\message.bin";
                 //using (Stream writer = File.Create(outputFile))
                 //{
                 //    writer.Write(memory.ToArray());

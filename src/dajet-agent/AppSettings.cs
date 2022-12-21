@@ -1,6 +1,7 @@
 ﻿using DaJet.Metadata;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text.Json.Serialization;
 
 namespace DaJet.Agent.Service
 {
@@ -26,12 +27,14 @@ namespace DaJet.Agent.Service
     }
     public sealed class KafkaProducerSettings
     {
-        public Assembly ErpModel { get; set; }
-        public bool IsActive { get; set; } = false;
+        public bool IsEnabled { get; set; } = false;
         public int IdleDelay { get; set; } = 60; // seconds
         public int ErrorDelay { get; set; } = 300; // seconds
         public string ConnectionString { get; set; } = string.Empty;
         public string OutgoingQueueName { get; set; } = string.Empty;
+        [JsonIgnore] public Assembly EntityModel { get; set; } = null;
+        public string ModelAssemblyName { get; set; } = string.Empty;
+        public string DefaultTopic { get; set; } = string.Empty;
         public Dictionary<string, string> Topics { get; set; } = new Dictionary<string, string>();
         public Dictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
     }

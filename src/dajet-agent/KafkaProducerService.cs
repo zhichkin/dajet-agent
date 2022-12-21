@@ -7,6 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -19,10 +21,12 @@ namespace DaJet.Agent.Kafka.Producer
 
         private readonly IMetadataCache _metadataCache;
         private readonly KafkaProducerSettings _options;
+        private readonly AppSettings _settings;
         public KafkaProducerService(IOptions<AppSettings> options, IMetadataCache cache)
         {
             _metadataCache = cache;
             _options = options.Value.Kafka.Producer;
+            _settings = options.Value;
         }
         public override Task StartAsync(CancellationToken cancellationToken)
         {
@@ -59,7 +63,7 @@ namespace DaJet.Agent.Kafka.Producer
                 catch (Exception error)
                 {
                     delay = _options.ErrorDelay;
-                    FileLogger.LogException(error);
+                    FileLogger.Log($"[Kafka] ERROR {ExceptionHelper.GetErrorText(error)}");
                     FileLogger.Log(string.Format(RETRY_MESSAGE_TEMPLATE, delay));
                 }
                 await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
@@ -67,6 +71,8 @@ namespace DaJet.Agent.Kafka.Producer
         }
         private void TryDoWork(CancellationToken cancellationToken)
         {
+            LoadEntityModelAssembly();
+
             GetMessagingSettingsWithRetry(out ApplicationObject queue, cancellationToken);
 
             using (IMessageConsumer consumer = GetMessageConsumer(in queue))
@@ -148,7 +154,7 @@ namespace DaJet.Agent.Kafka.Producer
             {
                 foreach (string error in errors)
                 {
-                    FileLogger.Log(error);
+                    FileLogger.Log($"[Kafka] {error}");
                 }
 
                 return false;
@@ -157,6 +163,24 @@ namespace DaJet.Agent.Kafka.Producer
             FileLogger.Log("[Kafka] Исходящая очередь настроена успешно.");
 
             return true;
+        }
+        private void LoadEntityModelAssembly()
+        {
+            if (string.IsNullOrWhiteSpace(_options.ModelAssemblyName))
+            {
+                return; // this option is not used
+            }
+
+            if (_options.EntityModel != null)
+            {
+                return; // already loaded
+            }
+
+            string filePath = Path.Combine(_settings.AppCatalog, _options.ModelAssemblyName);
+
+            _options.EntityModel = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+            
+            FileLogger.Log($"[Kafka] Entity model loaded successfully.");
         }
     }
 }

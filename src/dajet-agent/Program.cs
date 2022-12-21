@@ -2,17 +2,14 @@ using DaJet.Agent.Consumer;
 using DaJet.Agent.Kafka.Producer;
 using DaJet.Agent.Producer;
 using DaJet.Logging;
-using DaJet.Metadata;
 using DaJet.RabbitMQ;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
-using System.Runtime.Loader;
 
 namespace DaJet.Agent.Service
 {
@@ -28,26 +25,9 @@ namespace DaJet.Agent.Service
             FileLogger.UseCatalog(AppSettings.AppCatalog);
             FileLogger.UseFileName("dajet-agent");
 
-            LoadErpModelAssembly();
-
             FileLogger.Log("Hosting service is started.");
             CreateHostBuilder().Build().Run();
             FileLogger.Log("Hosting service is stopped.");
-        }
-        private static void LoadErpModelAssembly()
-        {
-            string filePath = Path.Combine(AppSettings.AppCatalog, "erp-model.dll");
-
-            try
-            {
-                AppSettings.Kafka.Producer.ErpModel = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
-
-                FileLogger.Log($"ERP model loaded successfully from {filePath}");
-            }
-            catch (Exception error)
-            {
-                FileLogger.Log($"Failed to load ERP model: {ExceptionHelper.GetErrorText(error)}");
-            }
         }
         private static void InitializeAppSettings()
         {
@@ -124,7 +104,7 @@ namespace DaJet.Agent.Service
                 services.AddHostedService<MessageConsumerService>();
             }
 
-            if (AppSettings.Kafka.Producer.IsActive)
+            if (AppSettings.Kafka.Producer.IsEnabled)
             {
                 services.AddHostedService<KafkaProducerService>();
             }
