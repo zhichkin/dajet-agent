@@ -1,0 +1,169 @@
+﻿using DaJet.Agent.Service;
+using DaJet.Data.Messaging;
+using DaJet.Logging;
+using DaJet.Metadata;
+using DaJet.Metadata.Model;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Loader;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace DaJet.Agent.Kafka.Consumer
+{
+    internal sealed class KafkaConsumerService : BackgroundService
+    {
+        private const string DELAY_MESSAGE_TEMPLATE = "Kafka consumer service delay for {0} seconds.";
+        private const string RETRY_MESSAGE_TEMPLATE = "Kafka consumer service will retry in {0} seconds.";
+
+        private readonly IMetadataCache _metadataCache;
+        private readonly KafkaConsumerSettings _options;
+        private readonly AppSettings _settings;
+        public KafkaConsumerService(IOptions<AppSettings> options, IMetadataCache cache)
+        {
+            _metadataCache = cache;
+            _options = options.Value.Kafka.Consumer;
+            _settings = options.Value;
+        }
+        public override Task StartAsync(CancellationToken cancellationToken)
+        {
+            FileLogger.Log("Kafka consumer service is started.");
+            // StartAsync calls and awaits ExecuteAsync inside
+            return base.StartAsync(cancellationToken);
+        }
+        public override Task StopAsync(CancellationToken cancellationToken)
+        {
+            FileLogger.Log("Kafka consumer service is stopping ...");
+            // Do shutdown cleanup here (see HostOptions.ShutdownTimeout)
+            FileLogger.Log("Kafka consumer service is stopped.");
+            return base.StopAsync(cancellationToken);
+        }
+        protected override Task ExecuteAsync(CancellationToken cancellationToken)
+        {
+            // Running the service in the background
+            _ = Task.Run(async () => { await DoWork(cancellationToken); }, cancellationToken);
+            // Return completed task to let other services to run
+            return Task.CompletedTask;
+        }
+        private async Task DoWork(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                int delay;
+
+                try
+                {
+                    TryDoWork(cancellationToken);
+                    delay = _options.IdleDelay;
+                    FileLogger.Log(string.Format(DELAY_MESSAGE_TEMPLATE, delay));
+                }
+                catch (Exception error)
+                {
+                    delay = _options.ErrorDelay;
+                    FileLogger.Log($"[Kafka] ERROR {ExceptionHelper.GetErrorText(error)}");
+                    FileLogger.Log(string.Format(RETRY_MESSAGE_TEMPLATE, delay));
+                }
+                await Task.Delay(TimeSpan.FromSeconds(delay), cancellationToken);
+            }
+        }
+        private void TryDoWork(CancellationToken cancellationToken)
+        {
+            LoadEntityModelAssembly();
+
+            GetMessagingSettingsWithRetry(out ApplicationObject _, cancellationToken);
+
+            using (KafkaMessageConsumer consumer = new KafkaMessageConsumer(_options))
+            {
+                consumer.Consume(cancellationToken);
+            }
+        }
+        private void LoadEntityModelAssembly()
+        {
+            if (string.IsNullOrWhiteSpace(_options.ModelAssemblyName))
+            {
+                return; // this option is not used
+            }
+
+            if (_options.EntityModel != null)
+            {
+                return; // already loaded
+            }
+
+            string filePath = Path.Combine(_settings.AppCatalog, _options.ModelAssemblyName);
+
+            _options.EntityModel = AssemblyLoadContext.Default.LoadFromAssemblyPath(filePath);
+
+            FileLogger.Log($"[Kafka] Entity model loaded successfully.");
+        }
+        private DatabaseProvider GetDatabaseProviderFromConnectionString()
+        {
+            return _options.ConnectionString.StartsWith("Host")
+                ? DatabaseProvider.PostgreSQL
+                : DatabaseProvider.SQLServer;
+        }
+        private void GetMessagingSettingsWithRetry(out ApplicationObject queue, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                try
+                {
+                    if (!_metadataCache.TryGet(out InfoBase infoBase))
+                    {
+                        throw new Exception("[Kafka] Failed to get metadata from cache.");
+                    }
+
+                    queue = infoBase.GetApplicationObjectByName(_options.IncomingQueueName);
+
+                    if (queue == null)
+                    {
+                        throw new Exception($"[Kafka] Объект метаданных \"{_options.IncomingQueueName}\" не найден.");
+                    }
+
+                    DbInterfaceValidator validator = new DbInterfaceValidator();
+                    int version = validator.GetIncomingInterfaceVersion(in queue);
+
+                    if (version < 1)
+                    {
+                        throw new Exception("[Kafka] Не удалось определить версию контракта данных.");
+                    }
+
+                    if (ConfigureIncomingQueue(version, in queue)) { return; }
+                }
+                catch (Exception error)
+                {
+                    FileLogger.Log("Kafka consumer service: failed to get messaging settings.");
+                    FileLogger.LogException(error);
+                }
+
+                FileLogger.Log(string.Format(RETRY_MESSAGE_TEMPLATE, _options.ErrorDelay));
+
+                Task.Delay(TimeSpan.FromSeconds(_options.ErrorDelay), cancellationToken).Wait(cancellationToken);
+            }
+        }
+        private bool ConfigureIncomingQueue(int version, in ApplicationObject queue)
+        {
+            DatabaseProvider provider = GetDatabaseProviderFromConnectionString();
+
+            DbQueueConfigurator configurator = new DbQueueConfigurator(version, provider, _options.ConnectionString);
+
+            configurator.ConfigureIncomingMessageQueue(in queue, out List<string> errors);
+
+            if (errors.Count > 0)
+            {
+                foreach (string error in errors)
+                {
+                    FileLogger.Log($"[Kafka] {error}");
+                }
+
+                return false;
+            }
+
+            FileLogger.Log("[Kafka] Входящая очередь настроена успешно.");
+
+            return true;
+        }
+    }
+}

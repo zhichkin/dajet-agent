@@ -1,4 +1,5 @@
 using DaJet.Agent.Consumer;
+using DaJet.Agent.Kafka.Consumer;
 using DaJet.Agent.Kafka.Producer;
 using DaJet.Agent.Producer;
 using DaJet.Logging;
@@ -107,6 +108,11 @@ namespace DaJet.Agent.Service
             if (AppSettings.Kafka.Producer.IsEnabled)
             {
                 services.AddHostedService<KafkaProducerService>();
+            }
+
+            if (AppSettings.Kafka.Consumer.IsEnabled)
+            {
+                services.AddHostedService<KafkaConsumerService>();
             }
         }
         private static void ConfigureDaJetAgentOptions(IServiceCollection services)

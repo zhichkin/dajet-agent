@@ -24,6 +24,7 @@ namespace DaJet.Agent.Service
     public sealed class KafkaSettings
     {
         public KafkaProducerSettings Producer { get; set; } = new KafkaProducerSettings();
+        public KafkaConsumerSettings Consumer { get; set; } = new KafkaConsumerSettings();
     }
     public sealed class KafkaProducerSettings
     {
@@ -34,8 +35,20 @@ namespace DaJet.Agent.Service
         public string OutgoingQueueName { get; set; } = string.Empty;
         [JsonIgnore] public Assembly EntityModel { get; set; } = null;
         public string ModelAssemblyName { get; set; } = string.Empty;
-        public string DefaultTopic { get; set; } = string.Empty;
+        public string Topic { get; set; } = string.Empty;
         public Dictionary<string, string> Topics { get; set; } = new Dictionary<string, string>();
+        public Dictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
+    }
+    public sealed class KafkaConsumerSettings
+    {
+        public bool IsEnabled { get; set; } = false;
+        public int IdleDelay { get; set; } = 60; // seconds
+        public int ErrorDelay { get; set; } = 300; // seconds
+        public string ConnectionString { get; set; } = string.Empty;
+        public string IncomingQueueName { get; set; } = string.Empty;
+        [JsonIgnore] public Assembly EntityModel { get; set; } = null;
+        public string ModelAssemblyName { get; set; } = string.Empty;
+        public string Topic { get; set; } = string.Empty;
         public Dictionary<string, string> Options { get; set; } = new Dictionary<string, string>();
     }
 }

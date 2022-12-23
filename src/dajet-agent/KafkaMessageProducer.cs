@@ -128,14 +128,15 @@ namespace DaJet.Agent.Kafka.Producer
         }
         private void ConfigureTopic(in OutgoingMessageDataMapper message)
         {
-            if (!_settings.Topics.TryGetValue(message.MessageType, out _topic))
+            if (_settings.Topics == null || _settings.Topics.Count == 0 ||
+                !_settings.Topics.TryGetValue(message.MessageType, out _topic))
             {
-                if (string.IsNullOrWhiteSpace(_settings.DefaultTopic))
+                if (string.IsNullOrWhiteSpace(_settings.Topic))
                 {
                     throw new InvalidOperationException($"[Kafka] Producer topic is not defined for message type \"{message.MessageType}\".");
                 }
 
-                _topic = _settings.DefaultTopic;
+                _topic = _settings.Topic;
             }
         }
         private void ConfigureHeaders(in OutgoingMessageDataMapper message)

@@ -40,7 +40,7 @@ namespace DaJet.ProtoBuf
         internal static void ReadProtobufFromFile()
         {
             string filePath = "C:\\temp\\proto\\json\\message.bin";
-            object? entity;
+            object entity;
             using (FileStream file = File.OpenRead(filePath))
             {
                 // typeof(РегистрСведений.ИсторияСтатусовЗаказовКлиентов)
