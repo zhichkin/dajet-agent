@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
+using System.Threading.Tasks;
 
 namespace DaJet.Agent.Service
 {
@@ -37,6 +38,22 @@ namespace DaJet.Agent.Service
 
             return Content(version, "text/plain", Encoding.UTF8);
         }
+
+        [AllowAnonymous]
+        [HttpPost("login")]
+        public async Task<IActionResult> Login([FromBody] AppUser model)
+        {
+            var user = await _authenticator.Authenticate(model.Username, model.Password);
+
+            if (user == null)
+            {
+                return BadRequest(new { message = "Username or password is incorrect" });
+            }
+
+            return Ok(user);
+        }
+
+
         [HttpGet("")][Authorize()]
         [Produces("application/json")]
         public ActionResult ConfigInfo()
