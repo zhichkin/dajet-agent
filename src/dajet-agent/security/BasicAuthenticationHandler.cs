@@ -47,7 +47,7 @@ namespace DaJet.Agent.Service.Security
                 var credentials = Encoding.UTF8.GetString(credentialBytes).Split(new[] { ':' }, 2);
                 var username = credentials[0];
                 var password = credentials[1];
-                user = await _authenticator.Authenticate(username, password);
+                user = await _authenticator.AuthenticateAsync(username, password);
             }
             catch
             {
@@ -61,7 +61,7 @@ namespace DaJet.Agent.Service.Security
 
             var claims = new[] {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Name, user.Name),
             };
             var identity = new ClaimsIdentity(claims, Scheme.Name);
             var principal = new ClaimsPrincipal(identity);

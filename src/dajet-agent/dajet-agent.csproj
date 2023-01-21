@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <UserSecretsId>dotnet-dajet_agent-70CD7B5B-826D-4213-B969-C955366C36C0</UserSecretsId>
     <RootNamespace>DaJet.Agent.Service</RootNamespace>
     <AssemblyName>DaJet.Agent.Service</AssemblyName>
@@ -21,11 +21,12 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
     <PackageReference Include="Confluent.Kafka" Version="1.9.3" />
     <PackageReference Include="DaJet.RabbitMQ" Version="1.5.5" />
     <PackageReference Include="DaJet.RabbitMQ.HttpApi" Version="1.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="7.0.2" />
     <PackageReference Include="Microsoft.AspNetCore.Hosting" Version="2.2.7" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="6.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="6.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Systemd" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
