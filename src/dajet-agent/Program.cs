@@ -4,13 +4,10 @@ using DaJet.Agent.Kafka.Producer;
 using DaJet.Agent.Producer;
 using DaJet.Logging;
 using DaJet.RabbitMQ;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -65,15 +62,7 @@ namespace DaJet.Agent.Service
                         .AddJsonFile("appsettings.json", optional: false);
                 })
                 .ConfigureServices(ConfigureServices);
-
-            builder.ConfigureWebHostDefaults(webHost =>
-            {
-                webHost.UseKestrel()
-                .UseStartup<WebServerStartup>()
-                .UseWebRoot("ui")
-                .UseContentRoot(AppContext.BaseDirectory);
-            });
-
+            
             return builder;
         }
         private static void ConfigureServices(HostBuilderContext context, IServiceCollection services)
