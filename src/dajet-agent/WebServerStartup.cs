@@ -13,10 +13,6 @@ namespace DaJet.Agent.Service
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            //services.AddHsts((options) =>
-            //{
-            //    options.MaxAge = TimeSpan.FromDays(30)
-            //});
             services.AddAuthentication("BasicAuthentication")
                 .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
             services.AddSingleton<AuthenticationProvider>();
@@ -26,10 +22,6 @@ namespace DaJet.Agent.Service
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-            }
-            else
-            {
-                //app.UseHsts();
             }
             app.UseAuthentication();
             app.UseHttpsRedirection();

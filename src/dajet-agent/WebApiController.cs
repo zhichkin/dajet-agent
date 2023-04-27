@@ -41,9 +41,9 @@ namespace DaJet.Agent.Service
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public IActionResult Login([FromBody] AppUser model)
+        public async Task<IActionResult> Login([FromBody] AppUser model)
         {
-            var user = _authenticator.Authenticate(model.Name, model.Pswd);
+            var user = await _authenticator.Authenticate(model.Username, model.Password);
 
             if (user == null)
             {

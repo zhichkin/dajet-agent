@@ -51,13 +51,6 @@ namespace DaJet.Agent.Service
             {
                 AppSettings.ExchangePlans = new List<string>() { "ѕланќбмена.ѕланќбменаƒанными" };
             }
-
-            ServiceCollection services = new();
-            services.AddDataProtection();
-            services.AddOptions().AddSingleton(Options.Create(AppSettings));
-            IServiceProvider provider = services.BuildServiceProvider();
-            SqliteAppSettingsProvider settings = ActivatorUtilities.CreateInstance<SqliteAppSettingsProvider>(provider);
-            settings.Configure();
         }
         private static IHostBuilder CreateHostBuilder()
         {
@@ -89,8 +82,6 @@ namespace DaJet.Agent.Service
                 .AddOptions()
                 .AddSingleton(Options.Create(AppSettings))
                 .Configure<HostOptions>(context.Configuration.GetSection(nameof(HostOptions)));
-            services.AddDataProtection();
-            services.AddSingleton<SqliteAppSettingsProvider>();
 
             services.AddMemoryCache();
             services.AddHostedService<MetadataCacheService>();

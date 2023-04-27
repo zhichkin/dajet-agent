@@ -8,35 +8,19 @@ namespace DaJet.Agent.Service.Security
     {
         private readonly List<AppUser> _users = new List<AppUser>()
         {
-            new AppUser { Id = 1, Name = "admin", Pswd = "admin" }
+            new AppUser { Id = 1, Username = "admin", Password = "admin" }
         };
-        private SqliteAppSettingsProvider App { get; set; }
-        public AuthenticationProvider(SqliteAppSettingsProvider _app)
-        {
-            App = _app;
-        }
-        public AppUser Authenticate(string username, string password)
-        {
-            AppUser user = new()
-            {
-                Name = username,
-                Pswd = password
-            };
 
-            if (!App.TrySelectUser(in user))
+        public async Task<AppUser> Authenticate(string username, string password)
+        {
+            var user = await Task.Run(() => _users.SingleOrDefault(x => x.Username == username && x.Password == password));
+
+            if (user == null)
             {
                 return null;
             }
 
-            user.Pswd = string.Empty;
-
-            return user;
-        }
-        public async Task<AppUser> AuthenticateAsync(string username, string password)
-        {
-            AppUser user = Authenticate(username, password);
-
-            return await Task.FromResult(user);
+            return new AppUser() { Id = user.Id, Username = user.Username, Password = string.Empty };
         }
     }
 }
