@@ -28,14 +28,6 @@ Both Microsoft SQL Server and PostgreSQL are supported.</Description>
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\PublishProfiles\" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\dajet-protobuf\dajet-protobuf.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

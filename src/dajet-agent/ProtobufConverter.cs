@@ -1,5 +1,4 @@
-﻿using ProtoBuf;
-using System;
+﻿using System;
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
@@ -10,50 +9,52 @@ namespace DaJet.ProtoBuf
     {
         internal static byte[] ConvertJsonToProtobuf(Assembly assembly, in string messageType, in string messageBody)
         {
-            Type type = assembly.GetType($"EntityModel.{messageType}");
+            return Array.Empty<byte>();
 
-            if (type == null)
-            {
-                return null;
-            }
+            //Type type = assembly.GetType($"EntityModel.{messageType}");
 
-            JsonSerializerOptions options = new JsonSerializerOptions()
-            {
-                Converters = { new UnionJsonConverter() }
-            };
+            //if (type == null)
+            //{
+            //    return null;
+            //}
 
-            object entity = JsonSerializer.Deserialize(messageBody, type, options);
+            //JsonSerializerOptions options = new JsonSerializerOptions()
+            //{
+            //    Converters = { new UnionJsonConverter() }
+            //};
 
-            using (MemoryStream memory = new MemoryStream())
-            {
-                Serializer.Serialize(memory, entity);
+            //object entity = JsonSerializer.Deserialize(messageBody, type, options);
 
-                //string outputFile = "C:\\test\\message.bin";
-                //using (Stream writer = File.Create(outputFile))
-                //{
-                //    writer.Write(memory.ToArray());
-                //}
+            //using (MemoryStream memory = new MemoryStream())
+            //{
+            //    Serializer.Serialize(memory, entity);
 
-                return memory.ToArray();
-            }
+            //    //string outputFile = "C:\\test\\message.bin";
+            //    //using (Stream writer = File.Create(outputFile))
+            //    //{
+            //    //    writer.Write(memory.ToArray());
+            //    //}
+
+            //    return memory.ToArray();
+            //}
         }
         internal static void ReadProtobufFromFile()
         {
-            string filePath = "C:\\temp\\proto\\json\\message.bin";
-            object entity;
-            using (FileStream file = File.OpenRead(filePath))
-            {
-                // typeof(РегистрСведений.ИсторияСтатусовЗаказовКлиентов)
-                string typeName = "РегистрСведений.ИсторияСтатусовЗаказовКлиентов";
-                Type type = Type.GetType(typeName)!;
-                if (type == null)
-                {
-                    Console.WriteLine($"Type \"{typeName}\" is not found.");
-                    return;
-                }
+            //string filePath = "C:\\temp\\proto\\json\\message.bin";
+            //object entity;
+            //using (FileStream file = File.OpenRead(filePath))
+            //{
+            //    // typeof(РегистрСведений.ИсторияСтатусовЗаказовКлиентов)
+            //    string typeName = "РегистрСведений.ИсторияСтатусовЗаказовКлиентов";
+            //    Type type = Type.GetType(typeName)!;
+            //    if (type == null)
+            //    {
+            //        Console.WriteLine($"Type \"{typeName}\" is not found.");
+            //        return;
+            //    }
 
-                entity = Serializer.Deserialize(type, file);
-            }
+            //    entity = Serializer.Deserialize(type, file);
+            //}
 
             //if (entity is РегистрСведений.ИсторияСтатусовЗаказовКлиентов)
             //{
