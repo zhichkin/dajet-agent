@@ -44,6 +44,7 @@ namespace DaJet.Agent.Service
         public bool IsEnabled { get; set; } = false;
         public int IdleDelay { get; set; } = 60; // seconds
         public int ErrorDelay { get; set; } = 300; // seconds
+        public int ConsumeTimeout { get; set; } = 10; // seconds
         public string ConnectionString { get; set; } = string.Empty;
         public string IncomingQueueName { get; set; } = string.Empty;
         [JsonIgnore] public Assembly EntityModel { get; set; } = null;

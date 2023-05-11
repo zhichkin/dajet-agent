@@ -61,7 +61,7 @@ namespace DaJet.Agent.Kafka.Consumer
             {
                 do
                 {
-                    _result = _consumer.Consume(TimeSpan.FromSeconds(1));
+                    _result = _consumer.Consume(TimeSpan.FromSeconds(_settings.ConsumeTimeout));
 
                     if (_result != null && _result.Message != null)
                     {
